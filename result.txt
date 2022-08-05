@@ -1,0 +1,156 @@
+{
+    "type": 5,
+    "table_name": "tpch_100000.lineitem_100000",
+    "full_query": "select count(l_extendedprice * l_discount) as revenue from lineitem_100000 where l_shipdate >= date '1994-01-01' and l_shipdate < date '1994-01-01' + interval '1' year and l_discount between 0.06 - 0.01 and 0.06 + 0.01 and l_quantity < 24",
+    "Extra": {
+        "filter": [
+            {
+                "OPERATOR": 0,
+                "LV": "tpch_100000.lineitem_100000.l_shipDATE",
+                "RV": 1020961
+            },
+            {
+                "OPERATOR": 12
+            },
+            {
+                "OPERATOR": 3,
+                "LV": "tpch_100000.lineitem_100000.l_shipDATE",
+                "RV": 1021473
+            },
+            {
+                "OPERATOR": 12
+            },
+            {
+                "OPERATOR": 7,
+                "LV": "tpch_100000.lineitem_100000.l_discount",
+                "Extra": [
+                    "+80000000000005",
+                    "+80000000000007"
+                ]
+            },
+            {
+                "OPERATOR": 12
+            },
+            {
+                "OPERATOR": 3,
+                "LV": "tpch_100000.lineitem_100000.l_quantity",
+                "RV": "+80000000001800"
+            }
+        ]
+    }
+}
+#Init Query Called!
+Do SCAN_N_FILTER Pushdown
+#my work type : 0
+mycount : 0
+WorkID : 0
+{
+    "type": 6,
+    "work_id": 0,
+    "Extra": {}
+}
+Return Merged data
+Scanned data requested by WorkID : 0
+## Wait Data ##
+## BufferQueue.push_work(BlockResult(json.c_str(), data)) ##
+## push_work called ##
+#work_type : JoinX
+row_all: 349
+A
+## myWorkBuffer->PushWork() ##
+## push_work called ##
+## Send Data ##
+#Queue Size: 0
+{
+    "type": 6,
+    "work_id": 0,
+    "Extra": {}
+}
+Return Merged data
+Scanned data requested by WorkID : 0
+## Wait Data ##
+## BufferQueue.push_work(BlockResult(json.c_str(), data)) ##
+## push_work called ##
+#work_type : JoinX
+row_all: 697
+A
+## myWorkBuffer->PushWork() ##
+## push_work called ##
+## Send Data ##
+#Queue Size: 0
+{
+    "type": 6,
+    "work_id": 0,
+    "Extra": {}
+}
+Return Merged data
+Scanned data requested by WorkID : 0
+## Wait Data ##
+## BufferQueue.push_work(BlockResult(json.c_str(), data)) ##
+## push_work called ##
+#work_type : JoinX
+row_all: 1045
+A
+## myWorkBuffer->PushWork() ##
+## push_work called ##
+## Send Data ##
+#Queue Size: 0
+{
+    "type": 6,
+    "work_id": 0,
+    "Extra": {}
+}
+Return Merged data
+Scanned data requested by WorkID : 0
+## Wait Data ##
+## BufferQueue.push_work(BlockResult(json.c_str(), data)) ##
+## push_work called ##
+#work_type : JoinX
+row_all: 1391
+A
+## myWorkBuffer->PushWork() ##
+## push_work called ##
+## Send Data ##
+#Queue Size: 0
+{
+    "type": 6,
+    "work_id": 0,
+    "Extra": {}
+}
+Return Merged data
+Scanned data requested by WorkID : 0
+## Wait Data ##
+## BufferQueue.push_work(BlockResult(json.c_str(), data)) ##
+## push_work called ##
+#work_type : JoinX
+row_all: 1739
+A
+## myWorkBuffer->PushWork() ##
+## push_work called ##
+## Send Data ##
+#Queue Size: 0
+{
+    "type": 6,
+    "work_id": 0,
+    "Extra": {}
+}
+Return Merged data
+Scanned data requested by WorkID : 0
+## Wait Data ##
+## BufferQueue.push_work(BlockResult(json.c_str(), data)) ##
+## push_work called ##
+#work_type : JoinX
+row_all: 1957
+A
+## myWorkBuffer->PushWork() ##
+## push_work called ##
+## Send Data ##
+#Queue Size: 0
+{
+    "type": 6,
+    "work_id": 0,
+    "Extra": {}
+}
+Return Merged data
+Scanned data requested by WorkID : 0
+## Wait Data ##

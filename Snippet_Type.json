@@ -1,0 +1,29 @@
+{
+    "Snippet":
+    {
+            "QueryID" : "int", //쿼리 id로 증가하는 인트
+            "WorkID" : "int", //워크 id로 쿼리 아이디 별 0부터 증가
+            "table_name" : ["string array"], //테이블 이름
+            "table_col" : ["string array"], //테이블 내부 컬럼
+            "table_filter" : [
+                {
+                    "LV" : "", //왼쪽 값
+                    "Operator" : "", //연산자
+                    "RV" : "", //오른쪽 값 --> in or between일 시 extra로 받음
+                    "Extra" : [""] //오른쪽 값에서 여러 값 일 경우
+                },
+                {
+                    "Operator" : "" //and 나 or
+                }
+            ],
+            "table_offset" : ["int array"], //table manager에 저장된 컬럼별 시작 위치
+            "table_offlen" : ["int array"], //table manager에 저장된 컬럼별 길이
+            "table_datatype" : ["int array"], //table manager에 저장된 데이터 타입
+            "BlockInfo" : ["Null"], //비워서 주시면 됩니다.
+            "table_alias" : "string", //from절에 또는 서브쿼리 시, 이후 사용되는 이름
+            "table_select" : ["select type array"], //테이블에서 살려야 할 컬럼
+            "select_alias" : ["string array"], //살려야 할 컬럼의 이후 사용되는 이름
+            "Group_By" : ["string array"], //그룹바이
+            "Order_By" : ["string array"] //오더바이
+    }
+}
