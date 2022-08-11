@@ -1,0 +1,1176 @@
+#include <vector>
+#include <unordered_map>
+#include <fcntl.h>
+#include <unistd.h>
+#include <iostream>
+#include <thread>
+#include <fstream>
+#include <string>
+#include <algorithm>
+#include <queue>
+#include <tuple>
+#include <sys/socket.h>
+#include <netinet/in.h> 
+#include <arpa/inet.h>
+#include <mutex>
+#include <condition_variable>
+#include <string.h>
+#include <cstdlib>
+#include <iomanip>
+#include <sstream>
+#include <list>
+#include <unordered_set>
+#include <map>
+#include <any>
+#include <stack>
+
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/prettywriter.h" 
+
+#include "TableManager.h"
+#include "QueryExecutor.h"
+#include "keti_type.h"
+
+using namespace std;
+using namespace rapidjson;
+
+#define NUM_OF_BLOCKS 15
+#define BUFF_SIZE (NUM_OF_BLOCKS * 4096)
+#define PORT_BUF 8888
+#define NCONNECTION 8
+
+template <typename T>
+class WorkQueue;
+struct Block_Buffer;
+struct Work_Buffer;
+
+typedef enum MySQL_DataType{
+    MySQL_BYTE = 1,
+    MySQL_INT16 = 2,
+    MySQL_INT32 = 3,
+    MySQL_INT64 = 8,
+    MySQL_FLOAT32 = 4,
+    MySQL_DOUBLE = 5,
+    MySQL_NEWDECIMAL = 246,
+    MySQL_DATE = 14,
+    MySQL_TIMESTAMP = 7,
+    MySQL_STRING = 254,
+    MySQL_VARSTRING = 15,
+}MySQL_DataType;
+
+typedef enum KETI_Type{
+    KETI_INT8,
+    KETI_INT16,
+    KETI_INT32,
+    KETI_INT64,
+    KETI_FLOAT32,
+    KETI_FLOAT64,
+    KETI_NUMERIC,
+    KETI_DATE,
+    KETI_TIMESTAMP,
+    KETI_STRING,
+}KETI_Type;
+
+struct SnippetData{
+        int work_id;
+        string sstfilename;
+        Value block_info_list;
+        vector<string> table_col;
+        Value table_filter;
+        vector<int> table_offset;
+        vector<int> table_offlen;
+        vector<int> table_datatype;
+        vector<string> sstfilelist;
+        string tablename;
+        vector<string> column_projection;
+        vector<string> column_filtering;
+        vector<string> Group_By;
+        vector<string> Order_By;
+        vector<string> Expr;
+};
+
+class Scheduler{
+
+    public:
+        Scheduler() {init_scheduler();}
+        vector<int> blockvec;
+        vector<tuple<string,string,string>> savedfilter;
+        vector<int> passindex;
+        SnippetData snippetdata;
+        vector<int> threadblocknum;
+    struct Snippet{
+        int work_id;
+        string sstfilename;
+        Value& block_info_list;
+        vector<string> table_col;
+        Value& table_filter;
+        vector<int> table_offset;
+        vector<int> table_offlen;
+        vector<int> table_datatype;
+        vector<string> sstfilelist;
+        vector<string> column_filtering;
+        vector<string> Group_By;
+        vector<string> Order_By;
+        vector<string> Expr;
+        vector<string> column_projection;
+
+        
+
+        Snippet(int work_id_, string sstfilename_,
+            Value& block_info_list_,
+            vector<string> table_col_, Value& table_filter_, 
+            vector<int> table_offset_, vector<int> table_offlen_,
+            vector<int> table_datatype_, vector<string> column_filtering_,
+            vector<string> Group_By_, vector<string> Order_By_, vector<string> Expr_,
+            vector<string> column_projection_)
+            : work_id(work_id_), sstfilename(sstfilename_),
+            block_info_list(block_info_list_),
+            table_col(table_col_),
+            table_filter(table_filter_),
+            table_offset(table_offset_),
+            table_offlen(table_offlen_),
+            table_datatype(table_datatype_),
+            column_filtering(column_filtering_),
+            Group_By(Group_By_), Order_By(Order_By_), Expr(Expr_),
+            column_projection(column_projection_){};
+        Snippet();
+    };
+
+        typedef enum work_type{
+            SCAN = 4,
+            SCAN_N_FILTER = 5,
+            REQ_SCANED_BLOCK = 6,
+            WORK_END = 9
+        }KETI_WORK_TYPE;
+
+        void init_scheduler();
+        void sched(int workid, Value& blockinfo,vector<int> offset, vector<int> offlen, vector<int> datatype, vector<string> tablecol, Value& filter,string sstfilename, string tablename, string res);
+        void sched(int indexdata);
+        void csdworkdec(string csdname, int num);
+        void Serialize(PrettyWriter<StringBuffer>& writer, Snippet& s, string csd_ip, string tablename, string CSDName);
+        void Serialize(Writer<StringBuffer>& writer, Snippet& s, string csd_ip, string tablename, string CSDName, int blockidnum);
+        string BestCSD(string sstname, int blockworkcount);
+        void sendsnippet(string snippet, string ipaddr);
+        void printcsdblock(){
+          for(auto i = csdworkblock_.begin(); i != csdworkblock_.end(); i++){
+            pair<std::string, int> k = *i;
+            cout << k.first << " " << k.second << endl;
+          }
+        }
+    private:
+        unordered_map<string,string> csd_; 
+        unordered_map<string, int> csdworkblock_; 
+        vector<string> csdname_;
+        unordered_map<string,string> sstcsd_; 
+        vector<string> csdpair_;
+        unordered_map<string,string> csdreaplicamap_;
+        int blockcount_;
+};
+
+template <typename T>
+class WorkQueue{
+  condition_variable work_available;
+  mutex work_mutex;
+  queue<T> work;
+
+public:
+  void push_work(T item){
+    unique_lock<mutex> lock(work_mutex);
+
+    bool was_empty = work.empty();
+    work.push(item);
+
+    lock.unlock();
+
+    if (was_empty){
+      work_available.notify_one();
+    }    
+  }
+
+  T wait_and_pop(){
+    unique_lock<mutex> lock(work_mutex);
+    while (work.empty()){
+      work_available.wait(lock);
+    }
+
+    T tmp = work.front();
+	
+    work.pop();
+    return tmp;
+  }
+
+  bool is_empty(){
+    return work.empty();
+  }
+
+  void qclear(){
+    work = queue<T>();
+  }
+
+  int get_size(){
+    return work.size();
+  }
+};
+
+struct BlockResult{
+    int query_id;
+    int work_id;
+    char data[BUFF_SIZE];
+    int length;
+    vector<int> row_offset; 
+    int rows;
+    int result_block_count;
+    string csd_name;
+
+    BlockResult(const char* json_, char* data_){
+
+        Document document;
+        document.Parse(json_); 
+
+        query_id = document["queryID"].GetInt();
+        work_id = document["workID"].GetInt();
+        rows = document["rowNum"].GetInt();
+
+        Value &row_offset_ = document["rowOffset"];
+        int row_offset_size = row_offset_.Size();
+        for(int i = 0; i<row_offset_size; i++){
+            row_offset.push_back(row_offset_[i].GetInt());
+        }
+
+        length = document["length"].GetInt();
+
+        memcpy(data, data_, length);
+
+        csd_name = document["csdName"].GetString();
+        result_block_count = document["resultBlockCount"].GetInt();
+    }
+};
+
+struct Work_Buffer {
+    string table_alias;
+    vector<string> table_column;
+    vector<int> return_datatype;
+    vector<int> table_datatype;
+    vector<int> table_offlen;
+    map<string,vector<any>> table_data;
+    int left_block_count;
+    bool is_done;
+    
+    Work_Buffer(string table_alias_, vector<string> table_column_, 
+                vector<int> return_datatype_, vector<int> table_offlen_,
+                int total_blobk_cnt_){
+        table_alias = table_alias_;
+        table_column.assign(table_column_.begin(),table_column_.end());
+        return_datatype.assign(return_datatype_.begin(),return_datatype_.end());
+        table_offlen.assign(table_offlen_.begin(),table_offlen_.end());
+        left_block_count = total_blobk_cnt_;
+        is_done = false;
+        table_datatype.clear();
+        vector<string>::iterator ptr1;
+        for(ptr1 = table_column_.begin(); ptr1 != table_column_.end(); ptr1++){
+          table_data.insert({(*ptr1),{}});
+        }
+        vector<int>::iterator ptr2;
+        for(ptr2 = return_datatype.begin(); ptr2 != return_datatype.end(); ptr2++){
+          if((*ptr2)==MySQL_BYTE){
+            table_datatype.push_back(KETI_INT8);
+          }else if((*ptr2)==MySQL_VARSTRING){
+            table_datatype.push_back(MySQL_STRING);
+          }else{
+            table_datatype.push_back((*ptr2));
+          }
+        }
+    }
+};
+
+struct Query_Buffer{
+  int query_id;
+  int work_cnt;
+  unordered_map<int,Work_Buffer*> work_buffer_list;
+  unordered_map<string,pair<int,int>> table_status;
+
+  Query_Buffer(int qid)
+  :query_id(qid){
+    work_cnt = 0;
+    work_buffer_list.clear();
+    table_status.clear();
+  }
+};
+
+struct TableData{
+  map<string,vector<any>> table_data;
+
+  TableData(){
+    table_data.clear();
+  }
+};
+
+struct TableInfo{
+  vector<string> table_column;
+  vector<int> table_datatype;
+  vector<int> table_offlen;
+
+  TableInfo(){
+    table_column.clear();
+    table_datatype.clear();
+    table_offlen.clear();
+  }
+};
+
+class BufferManager{	
+public:
+    BufferManager(Scheduler &scheduler, TableManager &tblManager){
+      InitBufferManager(scheduler, tblManager);
+    }
+    int InitBufferManager(Scheduler &scheduler, TableManager &tblManager);
+    int Join();
+    void BlockBufferInput();
+    void BufferRunning(Scheduler &scheduler, TableManager &tblManager);
+    void MergeBlock(BlockResult result, Scheduler &scheduler, TableManager &tblManager);
+    int InitWork(int qid, int wid, string table_alias,
+                 vector<string> table_column_, vector<int> table_datatype,
+                 vector<int> table_offlen_, int total_blobk_cnt_);
+    void InitQuery(int qid);
+    int CheckTableStatus(int qid, string tname);
+    TableInfo GetTableInfo(int qid, string tname);
+    TableData GetTableData(int qid, string tname);
+    int SaveTableData(int qid, string tname, TableData table_data_);
+
+    unordered_map<int, struct Query_Buffer*> my_buffer_m(){
+        return this->m_BufferManager;
+    }
+
+private:
+    unordered_map<int, struct Query_Buffer*> m_BufferManager;
+    WorkQueue<BlockResult> BlockResultQueue;
+    thread BufferManager_Input_Thread;
+    thread BufferManager_Thread;
+};
+
+
+void Init(Value snippet);
+
+unordered_map<string,vector<any>> GetBufMTable(string tablename,SnippetStruct snippet);
+
+void GetAccessData();
+
+void Join();
+
+void DependencyJoin();
+
+void GetColOff();
+
+void ColumnProjection(SnippetStruct snippet);
+
+void SaveTable();
+
+void makeTable(SnippetStruct snippet);
+
+void JoinTable(SnippetStruct snippet);
+
+bool IsJoin(SnippetStruct snippet);
+
+void Aggregation(SnippetStruct snippet);
+
+any Postfix(unordered_map<string,vector<any>> tablelist, vector<Projection> data, unordered_map<string,vector<any>> savedTable);
+
+struct Projection{
+    string value;
+    int type; 
+};
+
+struct VectorType{
+    vector<int> intvec;
+    vector<string> stringvec;
+    vector<float> floatvec;
+    int type;
+};
+
+struct StackType{
+    stack<int> intstack;
+    stack<float> floatstack;
+    int type;
+};
+
+struct SnippetStruct{
+        int query_id;
+        int work_id;
+        string sstfilename;
+        Value& block_info_list;
+        vector<string> table_col;
+        Value& table_filter;
+        vector<int> table_offset;
+        vector<int> table_offlen;
+        vector<int> table_datatype;
+        vector<string> column_alias;
+        int tableblocknum;
+        int tablerownum;
+        vector<string> tablename;
+        vector<string> tableAlias;
+        vector<vector<Projection>> columnProjection;
+        vector<string> columnFiltering;
+        vector<string> groupBy;
+        vector<string> orderBy;
+        vector<int> savetype;
+        unordered_map<string,VectorType> tabledata;
+        unordered_map<string,VectorType> resultdata;
+        unordered_map<string, StackType> resultstack;
+        char* data;
+
+        SnippetStruct(int work_id_, string sstfilename_,
+            Value& block_info_list_,
+            vector<string> table_col_, Value& table_filter_, 
+            vector<int> table_offset_, vector<int> table_offlen_,
+            vector<int> table_datatype_)
+            : work_id(work_id_), sstfilename(sstfilename_),
+            block_info_list(block_info_list_),
+            table_col(table_col_),
+            table_filter(table_filter_),
+            table_offset(table_offset_),
+            table_offlen(table_offlen_),
+            table_datatype(table_datatype_) {};
+
+        SnippetStruct();
+};
+
+int BufferManager::InitBufferManager(Scheduler &scheduler, TableManager &tblManager){
+    BufferManager_Input_Thread = thread([&](){BufferManager::BlockBufferInput();});
+    BufferManager_Thread = thread([&](){BufferManager::BufferRunning(scheduler, tblManager);});
+    return 0;
+}
+
+int BufferManager::Join(){
+    BufferManager_Input_Thread.join();
+    BufferManager_Thread.join();
+    return 0;
+}
+
+void BufferManager::BlockBufferInput(){
+    int server_fd, client_fd;
+	int opt = 1;
+	struct sockaddr_in serv_addr, client_addr;
+	socklen_t addrlen = sizeof(client_addr);
+    static char cMsg[] = "ok";
+
+	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0){
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))){
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+	
+	memset(&serv_addr, 0, sizeof(serv_addr));
+	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_addr.s_addr = INADDR_ANY;
+	serv_addr.sin_port = htons(PORT_BUF); 
+ 
+	if (bind(server_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0){
+		perror("bind");
+		exit(EXIT_FAILURE);
+	} 
+
+	if (listen(server_fd, NCONNECTION) < 0){
+		perror("listen");
+		exit(EXIT_FAILURE);
+	}
+
+	while(1){
+		if ((client_fd = accept(server_fd, (struct sockaddr*)&client_addr, (socklen_t*)&addrlen)) < 0){
+			perror("accept");
+        	exit(EXIT_FAILURE);
+		}
+
+		std::string json = "";
+        int njson;
+		size_t ljson;
+
+		recv( client_fd , &ljson, sizeof(ljson), 0);
+
+        char buffer[ljson] = {0};
+		
+		while(1) {
+			if ((njson = recv(client_fd, buffer, BUFF_SIZE-1, 0)) == -1) {
+				perror("read");
+				exit(1);
+			}
+			ljson -= njson;
+		    buffer[njson] = '\0';
+			json += buffer;
+
+		    if (ljson == 0)
+				break;
+		}
+		
+        send(client_fd, cMsg, strlen(cMsg), 0);
+
+		char data[BUFF_SIZE];
+        char* dataiter = data;
+		memset(data, 0, BUFF_SIZE);
+        int ndata = 0;
+        int totallen = 0;
+        size_t ldata = 0;
+        recv(client_fd , &ldata, sizeof(ldata),0);
+        totallen = ldata;
+
+		while(1) {
+			if ((ndata = recv( client_fd , dataiter, ldata,0)) == -1) {
+				perror("read");
+				exit(1);
+			}
+            dataiter = dataiter+ndata;
+			ldata -= ndata;
+
+		    if (ldata == 0)
+				break;
+		}
+
+        send(client_fd, cMsg, strlen(cMsg), 0);
+
+		BlockResultQueue.push_work(BlockResult(json.c_str(), data));		
+        
+        close(client_fd);		
+	}   
+	close(server_fd);
+}
+
+void BufferManager::BufferRunning(Scheduler &scheduler, TableManager &tblManager){
+    while (1){
+        BlockResult blockResult = BlockResultQueue.wait_and_pop();
+
+        if((m_BufferManager.find(blockResult.query_id) == m_BufferManager.end()) || 
+           (m_BufferManager[blockResult.query_id]->work_buffer_list.find(blockResult.work_id) 
+                    == m_BufferManager[blockResult.query_id]->work_buffer_list.end())){
+            cout << "<error> Work(" << blockResult.query_id << "-" << blockResult.work_id << ") Initialize First!" << endl;
+        }   
+
+        MergeBlock(blockResult, scheduler, tblManager);
+    }
+}
+
+void BufferManager::MergeBlock(BlockResult result, Scheduler &scheduler, TableManager &tblManager){
+    int qid = result.query_id;
+    int wid = result.work_id;
+
+    Work_Buffer* myWorkBuffer = m_BufferManager[qid]->work_buffer_list[wid];
+
+    if(myWorkBuffer->is_done){
+        cout << "<error> Work(" << qid << "-" << wid << ") Is Already Done!" << endl;
+        return;
+    }
+
+    if(result.length != 0){
+        int col_type, col_offset, col_len = 0;
+        string col_name;
+        vector<int> temp_offset;
+        temp_offset.assign(result.row_offset.begin(), result.row_offset.end());
+        temp_offset.push_back(result.length);
+
+        for(int i=0; i<result.rows; i++){
+            col_offset = result.row_offset[i];
+            int temp_test = col_offset + temp_offset[i+1] - temp_offset[i];
+
+            for(int j=0; j<myWorkBuffer->table_datatype.size(); j++){
+                col_name = myWorkBuffer->table_column[j];
+                col_type = myWorkBuffer->table_datatype[j];
+
+                if(col_type == MySQL_VARSTRING){ 
+                    col_len = myWorkBuffer->table_offlen[j];
+                    char tempbuf[4]; 
+                    memset(tempbuf,0,4);
+                    if(col_len < 255){
+                        tempbuf[0] = result.data[col_offset];
+                        col_len = *((int *)tempbuf);
+                        col_offset += 1;
+                    }else{
+                        tempbuf[0] = result.data[col_offset];
+                        tempbuf[1] = result.data[col_offset+1];
+                        col_len = *((int *)tempbuf);
+                        col_offset += 2;
+                    }
+                }else{
+                    col_len = myWorkBuffer->table_offlen[j];   
+                }
+
+                switch (col_type){
+                    case MySQL_BYTE:{
+                        char tempbuf[col_len];
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        int8_t my_value = *((int8_t *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_INT16:{
+                        char tempbuf[col_len];
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        int16_t my_value = *((int16_t *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_INT32:{
+                        char tempbuf[col_len];
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        int32_t my_value = *((int32_t *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_INT64:{
+                        char tempbuf[col_len];
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        int64_t my_value = *((int64_t *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_FLOAT32:{
+                        char tempbuf[col_len];
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        float my_value = *((float *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_DOUBLE:{
+                        char tempbuf[col_len];
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        double my_value = *((double *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_NEWDECIMAL:{
+                        char tempbuf[col_len];
+                        for(int k=0; k<col_len; k++){
+                            tempbuf[col_len-k-1] = result.data[col_offset+k];
+                        }
+                        tempbuf[col_len-1] = 0x00;
+                        int my_value = *((int *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_DATE:{
+                        char tempbuf[col_len+1];
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        tempbuf[3] = 0x00;
+                        int my_value = *((int *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_TIMESTAMP:{
+                        char tempbuf[col_len];
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        int my_value = *((int *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_STRING:
+                     case MySQL_VARSTRING:{
+                        char tempbuf[col_len];
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        string my_value(tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }default:{
+                        cout << "<error> Type:" << col_type << " Is Not Defined!!" << endl;
+                    }
+                }
+                
+                col_offset += col_len;
+            }
+
+            if(temp_test != col_offset){
+                cout << "<error> offset different! " << temp_test << "/" << col_offset << endl;
+            }
+        }
+    }
+
+    cout << "(before left/result cnt/after left)|(" << myWorkBuffer->left_block_count << "/" << result.result_block_count << "/" << myWorkBuffer->left_block_count-result.result_block_count << ")" << endl;
+    scheduler.csdworkdec(result.csd_name, result.result_block_count);
+    myWorkBuffer->left_block_count -= result.result_block_count;
+
+    if(myWorkBuffer->left_block_count == 0){
+        cout << "#Work(" << qid << "-" << wid << ") Is Done!" << endl;
+        myWorkBuffer->is_done = true;
+        m_BufferManager[qid]->table_status[myWorkBuffer->table_alias].second = true;      
+    }else if(myWorkBuffer->left_block_count < 0){
+        cout << "<error> Work(" << qid << "-" << wid << ") Block Count = " << myWorkBuffer->left_block_count << endl;
+    }
+}
+
+int BufferManager::InitWork(int qid, int wid, string table_alias,
+                            vector<string> table_column_, vector<int> table_datatype,
+                            vector<int> table_offlen_, int total_block_cnt_){
+    cout << "#Init Work! [" << qid << "-" << wid << "] (BufferManager)" << endl;
+   
+    if(m_BufferManager.find(qid) == m_BufferManager.end()){
+        InitQuery(qid);
+    }else if(m_BufferManager[qid]->work_buffer_list.find(wid) 
+                != m_BufferManager[qid]->work_buffer_list.end()){
+        cout << "<error> Work ID Duplicate Error" << endl;
+        return -1;            
+    }   
+
+    Work_Buffer* workBuffer = new Work_Buffer(table_alias, table_column_, table_datatype, 
+                                                table_offlen_, total_block_cnt_);
+    
+    m_BufferManager[qid]->work_cnt++;
+    m_BufferManager[qid]->work_buffer_list[wid]= workBuffer;
+    m_BufferManager[qid]->table_status[table_alias] = make_pair(wid,false);
+
+    return 1;
+}
+
+void BufferManager::InitQuery(int qid){
+    cout << "#Init Query! [" << qid << "] (BufferManager)" << endl;
+
+    Query_Buffer* queryBuffer = new Query_Buffer(qid);
+    m_BufferManager.insert(pair<int,Query_Buffer*>(qid,queryBuffer));
+}
+
+int BufferManager::CheckTableStatus(int qid, string tname){
+    if(m_BufferManager.find(qid) == m_BufferManager.end()){
+        return -2;
+    }else if(m_BufferManager[qid]->table_status.find(tname) == m_BufferManager[qid]->table_status.end()){
+        return -1;
+    }else if(!m_BufferManager[qid]->table_status[tname].second){
+        return 0;
+    }else{
+        return 1;
+    }
+}
+
+TableInfo BufferManager::GetTableInfo(int qid, string tname){
+    int status = CheckTableStatus(qid,tname);
+    TableInfo tableInfo;
+    if(status!=1){
+        return tableInfo;
+    }
+
+    int wid = m_BufferManager[qid]->table_status[tname].first;
+    Work_Buffer* workBuffer = m_BufferManager[qid]->work_buffer_list[wid];
+    tableInfo.table_column = workBuffer->table_column;
+    tableInfo.table_datatype = workBuffer->table_datatype;
+    tableInfo.table_offlen = workBuffer->table_offlen;
+   
+    return tableInfo;
+}
+
+TableData BufferManager::GetTableData(int qid, string tname){
+    int status = CheckTableStatus(qid,tname);
+    TableData tableData;
+    if(status!=1){
+        return tableData;
+    }
+
+    int wid = m_BufferManager[qid]->table_status[tname].first;
+    Work_Buffer* workBuffer = m_BufferManager[qid]->work_buffer_list[wid];
+    tableData.table_data = workBuffer->table_data;
+   
+    return tableData;
+}
+
+int BufferManager::SaveTableData(int qid, string tname, TableData table_data_){
+    int status = CheckTableStatus(qid,tname);
+    if(status!=0){
+        return 0;
+    }
+
+    int wid = m_BufferManager[qid]->table_status[tname].first;
+    m_BufferManager[qid]->work_buffer_list[wid]->table_data = table_data_.table_data;
+    m_BufferManager[qid]->work_buffer_list[wid]->is_done = true;
+    m_BufferManager[qid]->table_status[tname].second = true;
+
+    return 1;
+}
+
+
+void Init(Value Query)
+{
+    SnippetStruct snippet;
+    if (IsJoin(snippet))
+    { 
+        ColumnProjection(snippet);
+    }
+    else
+    { 
+        JoinTable(snippet);
+    }
+}
+
+unordered_map<string,vector<any>> GetBufMTable(string tablename, SnippetStruct snippet)
+{
+
+        unordered_map<string,vector<any>> table = buffermanager.gettable(tablename);
+        buffermanager.gettableinfo(snippet); 
+        return table;    
+     
+}
+
+any Postfix(unordered_map<string,vector<any>> tablelist, vector<Projection> data, unordered_map<string,vector<any>> savedTable){
+    unordered_map<string,int> stackmap;
+    pair<string,vector<any>> tmppair;
+    auto tmpiter = tablelist.begin();
+    tmppair = *tmpiter;
+    int rownum = tmppair.second.size();
+    if(data[0].value == "0"){
+        stack<any> tmpstack;
+        for(int i = 0; i < rownum; i++){
+            for(int j = 1; j < data.size(); j++){
+                if(data[j].type == 3){
+                    tmpstack.push(tablelist[data[j].value][i]);
+                }else if(data[j].type == 2){
+                    if(data[j].value == "+"){
+                        any value1 = tmpstack.top();
+                        tmpstack.pop();
+                        any value2 = tmpstack.top();
+                        tmpstack.pop();
+                        if(value1.type() == typeid(int&)){
+                            int retnum = any_cast<int>(value1) + any_cast<int>(value2);
+                            tmpstack.push(retnum);
+                        }else if(value1.type() == typeid(float&)){
+                            float retnum = any_cast<float>(value1) + any_cast<float>(value2);
+                            tmpstack.push(retnum);
+                        }
+                    }else if(data[j].value == "-"){
+                        any value1 = tmpstack.top();
+                        tmpstack.pop();
+                        any value2 = tmpstack.top();
+                        tmpstack.pop();
+                        if(value1.type() == typeid(int&)){
+                            int retnum = any_cast<int>(value1) - any_cast<int>(value2);
+                            tmpstack.push(retnum);
+                        }else if(value1.type() == typeid(float&)){
+                            float retnum = any_cast<float>(value1) - any_cast<float>(value2);
+                            tmpstack.push(retnum);
+                        }
+                    }else if(data[j].value == "*"){
+                        any value1 = tmpstack.top();
+                        tmpstack.pop();
+                        any value2 = tmpstack.top();
+                        tmpstack.pop();
+                        if(value1.type() == typeid(int&)){
+                            int retnum = any_cast<int>(value1) * any_cast<int>(value2);
+                            tmpstack.push(retnum);
+                        }else if(value1.type() == typeid(float&)){
+                            float retnum = any_cast<float>(value1) * any_cast<float>(value2);
+                            tmpstack.push(retnum);
+                        }
+                    }else if(data[j].value == "/"){
+                        any value1 = tmpstack.top();
+                        tmpstack.pop();
+                        any value2 = tmpstack.top();
+                        tmpstack.pop();
+                        if(value1.type() == typeid(int&)){
+                            int retnum = any_cast<int>(value1) / any_cast<int>(value2);
+                            tmpstack.push(retnum);
+                        }else if(value1.type() == typeid(float&)){
+                            float retnum = any_cast<float>(value1) / any_cast<float>(value2);
+                            tmpstack.push(retnum);
+                        }
+                    }else{
+                    }
+                }else if(data[j].type == 1){
+                    tmpstack.push(stof(data[j].value));
+                }else{
+                    tmpstack.push(stoi(data[j].value));
+                }
+
+            }
+            savedTable["asd"].push_back(tmpstack.top());
+        }
+    }else if(data[0].value == "1"){ 
+        stack<any> tmpstack;
+        for(int i = 0; i < rownum; i++){
+            for(int j = 1; j < data.size(); j++){
+                if(data[j].type == 3){
+                    tmpstack.push(tablelist[data[j].value][i]);
+                }else if(data[j].type == 2){
+                    if(data[j].value == "+"){
+                        any value1 = tmpstack.top();
+                        tmpstack.pop();
+                        any value2 = tmpstack.top();
+                        tmpstack.pop();
+                        if(value1.type() == typeid(int&)){
+                            int retnum = any_cast<int>(value1) + any_cast<int>(value2);
+                            tmpstack.push(retnum);
+                        }else if(value1.type() == typeid(float&)){
+                            float retnum = any_cast<float>(value1) + any_cast<float>(value2);
+                            tmpstack.push(retnum);
+                        }
+                    }else if(data[j].value == "-"){
+                        any value1 = tmpstack.top();
+                        tmpstack.pop();
+                        any value2 = tmpstack.top();
+                        tmpstack.pop();
+                        if(value1.type() == typeid(int&)){
+                            int retnum = any_cast<int>(value1) - any_cast<int>(value2);
+                            tmpstack.push(retnum);
+                        }else if(value1.type() == typeid(float&)){
+                            float retnum = any_cast<float>(value1) - any_cast<float>(value2);
+                            tmpstack.push(retnum);
+                        }
+                    }else if(data[j].value == "*"){
+                        any value1 = tmpstack.top();
+                        tmpstack.pop();
+                        any value2 = tmpstack.top();
+                        tmpstack.pop();
+                        if(value1.type() == typeid(int&)){
+                            int retnum = any_cast<int>(value1) * any_cast<int>(value2);
+                            tmpstack.push(retnum);
+                        }else if(value1.type() == typeid(float&)){
+                            float retnum = any_cast<float>(value1) * any_cast<float>(value2);
+                            tmpstack.push(retnum);
+                        }
+                    }else if(data[j].value == "/"){
+                        any value1 = tmpstack.top();
+                        tmpstack.pop();
+                        any value2 = tmpstack.top();
+                        tmpstack.pop();
+                        if(value1.type() == typeid(int&)){
+                            int retnum = any_cast<int>(value1) / any_cast<int>(value2);
+                            tmpstack.push(retnum);
+                        }else if(value1.type() == typeid(float&)){
+                            float retnum = any_cast<float>(value1) / any_cast<float>(value2);
+                            tmpstack.push(retnum);
+                        }
+                    }else{
+                    }
+                }else if(data[j].type == 1){
+                    tmpstack.push(stof(data[j].value));
+                }else{
+                    tmpstack.push(stoi(data[j].value));
+                }
+
+            }
+            any data = 0;
+            any tmpnum = tmpstack.top(); 
+            if(tmpnum.type() == typeid(int&)){
+                data = any_cast<int>(data) + any_cast<int>(tmpnum);
+            }else{
+                data = any_cast<float>(data) + any_cast<float>(tmpnum);
+            }
+
+        }
+        savedTable["asd"].push_back(data);
+    }
+    
+
+}
+
+void Aggregation(SnippetStruct snippet){
+    unordered_map<string,vector<any>> tablelist;
+
+    for(int i = 0; i < snippet.tablename.size(); i++){
+        unordered_map<string,vector<any>> table = GetBufMTable(snippet.tablename[i], snippet);
+        for(auto it = table.begin(); it != table.end(); i++){
+            pair<string,vector<any>> pair;
+            pair = *it;
+            tablelist.insert(pair);
+        }
+    }
+
+    unordered_map<string,vector<any>> savedTable;
+    for(int i = 0; i < snippet.columnProjection.size(); i++){
+        any ret;
+        ret = Postfix(tablelist,snippet.columnProjection[i], savedTable);
+    }
+}
+
+void JoinTable(SnippetStruct snippet){
+    vector<unordered_map<string,vector<any>>> tablelist;
+
+    for(int i = 0; i < 2; i++){
+        unordered_map<string,vector<any>> table = GetBufMTable(snippet.tablename[i], snippet);
+        tablelist.push_back(table);
+    }
+
+    string joinColumn1 = snippet.table_filter[0]["LV"].GetString();
+    string joinColumn2 = snippet.table_filter[0]["RV"].GetString();
+
+    unordered_map<string,vector<any>> savedTable;
+    for(auto i = tablelist[0].begin(); i != tablelist[0].end(); i++){
+        pair<string,vector<any>> tabledata;
+        tabledata = *i;
+        vector<any> table;
+        savedTable.insert(make_pair(tabledata.first,table));
+        
+    }
+    for(auto i = tablelist[1].begin(); i != tablelist[1].end(); i++){
+        pair<string,vector<any>> tabledata;
+        tabledata = *i;
+        vector<any> table;
+        if(savedTable.find(tabledata.first) != savedTable.end()){
+            savedTable.insert(make_pair(tabledata.first + "_2", table));
+        }else{
+            savedTable.insert(make_pair(tabledata.first, table));
+        }
+    }
+
+    for(int i = 0; i < tablelist[0][joinColumn1].size(); i++){
+        for(int j = 0; j < tablelist[1][joinColumn2].size(); j++){
+            if(tablelist[0][joinColumn1][i].type() == typeid(int)){
+                if(any_cast<int&>(tablelist[0][joinColumn1][i]) == any_cast<int&>(tablelist[1][joinColumn2][j])){
+                    for(auto it = tablelist[0].begin(); it != tablelist[0].end(); it++){
+                        pair<string,vector<any>> tabledata;
+                        tabledata = *it;
+                        vector<any> tmptable = tabledata.second;
+                        savedTable[tabledata.first].push_back(tmptable[i]);
+                    }
+                    for(auto it = tablelist[1].begin(); it != tablelist[1].end(); it++){
+                        pair<string,vector<any>> tabledata;
+                        tabledata = *it;
+                        if(savedTable.find(tabledata.first + "_v2") != savedTable.end()){
+                            vector<any> tmptable = tabledata.second;
+                            savedTable[tabledata.first + "_v2"].push_back(tmptable[j]);
+                        }else{
+                            vector<any> tmptable = tabledata.second;
+                            savedTable[tabledata.first].push_back(tmptable[j]);
+                        }
+                    }
+
+                }
+            }else if(tablelist[0][joinColumn1][i].type() == typeid(float)){
+                if(any_cast<float&>(tablelist[0][joinColumn1][i]) == any_cast<float&>(tablelist[1][joinColumn2][j])){
+                    for(auto it = tablelist[0].begin(); it != tablelist[0].end(); it++){
+                        pair<string,vector<any>> tabledata;
+                        tabledata = *it;
+                        vector<any> tmptable = tabledata.second;
+                        savedTable[tabledata.first].push_back(tmptable[i]);
+                    }
+                    for(auto it = tablelist[1].begin(); it != tablelist[1].end(); it++){
+                        pair<string,vector<any>> tabledata;
+                        tabledata = *it;
+                        if(savedTable.find(tabledata.first + "_v2") != savedTable.end()){
+                            vector<any> tmptable = tabledata.second;
+                            savedTable[tabledata.first + "_v2"].push_back(tmptable[j]);
+                        }else{
+                            vector<any> tmptable = tabledata.second;
+                            savedTable[tabledata.first].push_back(tmptable[j]);
+                        }
+                    }
+
+                }
+
+            }else if(tablelist[0][joinColumn1][i].type() == typeid(string)){
+                if(any_cast<string&>(tablelist[0][joinColumn1][i]) == any_cast<string&>(tablelist[1][joinColumn2][j])){
+                    for(auto it = tablelist[0].begin(); it != tablelist[0].end(); it++){
+                        pair<string,vector<any>> tabledata;
+                        tabledata = *it;
+                        vector<any> tmptable = tabledata.second;
+                        savedTable[tabledata.first].push_back(tmptable[i]);
+                    }
+                    for(auto it = tablelist[1].begin(); it != tablelist[1].end(); it++){
+                        pair<string,vector<any>> tabledata;
+                        tabledata = *it;
+                        if(savedTable.find(tabledata.first + "_v2") != savedTable.end()){
+                            vector<any> tmptable = tabledata.second;
+                            savedTable[tabledata.first + "_v2"].push_back(tmptable[j]);
+                        }else{
+                            vector<any> tmptable = tabledata.second;
+                            savedTable[tabledata.first].push_back(tmptable[j]);
+                        }
+                    }
+
+                }
+
+            }
+
+        }
+    }
+    buffermanager.savetable(savedTable);
+}
+
+
+
+void GetAccessData()
+}
+
+void ColumnProjection(SnippetStruct snippet)
+{
+    int nullsize = 0;
+    snippet.tabledata.clear();
+    snippet.resultstack.clear();
+    snippet.resultdata.clear();
+    for (int i = 0; i < snippet.tableAlias.size(); i++)
+    {
+        VectorType vectortype;
+        vectortype.type = snippet.savetype[i];
+        snippet.resultdata.insert(make_pair(snippet.tableAlias[i], vectortype));
+        StackType stacktype;
+        stacktype.type = snippet.savetype[i];
+        snippet.resultstack.insert(make_pair(snippet.tableAlias[i], stacktype));
+    }
+    for (int i = 0; i < snippet.table_col.size(); i++)
+    {
+        VectorType tmpvector;
+
+        snippet.tabledata.insert(make_pair(snippet.table_col[i], tmpvector));
+    }
+    for (int i = 0; i < snippet.columnProjection.size(); i++)
+    {
+        switch (atoi(snippet.columnProjection[i][0].value.c_str()))
+        {
+        case KETI_Column_name:
+            for (int j = 1; j < snippet.columnProjection[i].size(); j++)
+            {
+                for (int k = 0; k < snippet.tablerownum; k++)
+                {
+                    switch (snippet.columnProjection[i][j].type)
+                    {
+                    case PROJECTION_STRING:
+                        break;
+                    case PROJECTION_INT:
+                        break;
+                    case PROJECTION_FLOAT:
+                        break;
+                    case PROJECTION_COL:
+                        if(snippet.resultstack[snippet.tableAlias[i]].type == 1){
+                            
+                        }else if(snippet.resultstack[snippet.tableAlias[i]].type == 2){
+
+                        }
+
+                        break;
+                    case PROJECTION_OPER:
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            }
+
+            break;
+        case KETI_SUM:
+
+            break;
+        case KETI_AVG:
+
+            break;
+        case KETI_COUNT:
+
+            break;
+        case KETI_COUNTALL:
+
+            break;
+        case KETI_MIN:
+
+            break;
+        case KETI_MAX:
+
+            break;
+        case KETI_CASE:
+       
+            break;
+        case KETI_WHEN:
+
+            break;
+        case KETI_THEN:
+
+            break;
+        case KETI_ELSE:
+
+            break;
+        case KETI_LIKE:
+
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void GetColOff()
+{
+}

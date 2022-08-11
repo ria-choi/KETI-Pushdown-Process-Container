@@ -65,6 +65,10 @@
         "future": "cpp",
         "typeindex": "cpp",
         "variant": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "any": "cpp",
+        "queue": "cpp",
+        "hash_set": "cpp",
+        "*.inc": "cpp"
     }
 }

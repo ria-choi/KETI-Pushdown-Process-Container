@@ -2,6 +2,10 @@
 #include <vector>
 #include <unordered_map>
 #include <stack>
+#include <any>
+#include <algorithm>
+#include <string>
+#include <typeinfo>
 
 #include "rapidjson/document.h"
 
@@ -17,7 +21,7 @@ using namespace rapidjson;
 
 void Init(Value snippet);
 
-bool GetBufMTable(Snippet &snippet);
+unordered_map<string,vector<any>> GetBufMTable(string tablename,SnippetStruct snippet);
 
 void GetAccessData();
 
@@ -27,15 +31,23 @@ void DependencyJoin();
 
 void GetColOff();
 
-void ColumnProjection(Snippet snippet);
+void ColumnProjection(SnippetStruct snippet);
 
 void SaveTable();
 
-void makeTable(snippet snippet);
+void makeTable(SnippetStruct snippet);
+
+void JoinTable(SnippetStruct snippet);
+
+bool IsJoin(SnippetStruct snippet);
+
+void Aggregation(SnippetStruct snippet);
+
+any Postfix(unordered_map<string,vector<any>> tablelist, vector<Projection> data, unordered_map<string,vector<any>> savedTable);
 
 struct Projection{
     string value;
-    int type;
+    int type; // 0 int, 1 float, 2 string, 3 column
 };
 
 struct VectorType{
@@ -48,10 +60,11 @@ struct VectorType{
 struct StackType{
     stack<int> intstack;
     stack<float> floatstack;
+    // type_info type;
     int type;
 };
 
-struct Snippet{
+struct SnippetStruct{
         int query_id;
         int work_id;
         string sstfilename;
@@ -61,11 +74,12 @@ struct Snippet{
         vector<int> table_offset;
         vector<int> table_offlen;
         vector<int> table_datatype;
+        vector<string> column_alias;
         int tableblocknum;
         int tablerownum;
-        string tablename;
+        vector<string> tablename;
         vector<string> tableAlias;
-        vector<vector<Projection>> tableProjection;
+        vector<vector<Projection>> columnProjection;
         vector<string> columnFiltering;
         vector<string> groupBy;
         vector<string> orderBy;
@@ -75,7 +89,7 @@ struct Snippet{
         unordered_map<string, StackType> resultstack;
         char* data;
 
-        Snippet(int work_id_, string sstfilename_,
+        SnippetStruct(int work_id_, string sstfilename_,
             Value& block_info_list_,
             vector<string> table_col_, Value& table_filter_, 
             vector<int> table_offset_, vector<int> table_offlen_,
@@ -88,5 +102,5 @@ struct Snippet{
             table_offlen(table_offlen_),
             table_datatype(table_datatype_) {};
 
-        Snippet();
+        SnippetStruct();
 };

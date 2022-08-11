@@ -11,6 +11,7 @@ int main(int argc, char const *argv[])
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
+	RunServer();
     // char *hello = "Hello from server";
        
     // Creating socket file descriptor
@@ -295,4 +296,25 @@ int my_LBA2PBA(std::string &req_json,std::string &res_json){
 	::close(sock);
 
 	return 0;
+}
+
+
+
+void RunServer() {
+  std::string server_address("0.0.0.0:50051");
+  SnippetSampleServiceImpl service;
+
+  ServerBuilder builder;
+  // Listen on the given address without any authentication mechanism.
+  builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+  // Register "service" as the instance through which we'll communicate with
+  // clients. In this case, it corresponds to an *synchronous* service.
+  builder.RegisterService(&service);
+  // Finally assemble the server.
+  std::unique_ptr<Server> server(builder.BuildAndStart());
+  std::cout << "Server listening on " << server_address << std::endl;
+
+  // Wait for the server to shutdown. Note that some other thread must be
+  // responsible for shutting down the server for this call to ever return.
+  server->Wait();
 }

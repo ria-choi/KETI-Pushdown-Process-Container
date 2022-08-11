@@ -12,52 +12,6 @@ int BufferManager::Join(){
     return 0;
 }
 
-int BufferManager::CheckTableStatus(int qid, string tname){
-    if(m_BufferManager.find(qid) == m_BufferManager.end()){
-        return -2;//쿼리 ID 오류
-    }else if(m_BufferManager[qid]->table_status.find(tname) == m_BufferManager[qid]->table_status.end()){
-        return -1;//테이블이 없음
-    }else if(!m_BufferManager[qid]->table_status[tname]){
-        return 0;//작업 아직 안끝남
-    }else{
-        return 1;//작업 완료되어 테이블 데이터 존재
-    }
-}
-
-int GetColumnValue(TableManager &tblManager, string col_name, string table_name, int &col_offset, int &col_length, char* rowdata){
-    vector<TableManager::ColumnSchema> schema;
-    int resp = tblManager.get_table_schema(table_name, schema);
-    string col_name_;
-    bool isvarchar = false;
-    int coltype;
-    for(int j = 0; j < schema.size(); j++){
-        if (schema[j].type == 15){
-            //varchar일 경우 내 길이 구하기 + 뒤에값에 영향주기
-            col_offset = schema[j].offset + 1;
-            char varcharlenbuf[4];
-            memset(varcharlenbuf,0,4);
-            varcharlenbuf[3] = rowdata[col_offset];
-            int varcharlen = *((int*)varcharlenbuf);
-            col_length = varcharlen;
-            isvarchar = true;
-        }else if(isvarchar){
-            col_offset = col_offset + col_length;
-            col_length = schema[j].length;
-        }else{
-            col_offset = schema[j].offset;
-            col_length = schema[j].length;
-        }
-        col_name_ = table_name + '.' + schema[j].column_name;
-        if(col_name_ == col_name){
-            // col_offset = schema[j].offset;
-            // col_length = schema[j].length;
-            //schema[j].type;
-            coltype = schema[j].type;
-            return coltype;
-        }
-    }
-}
-
 void BufferManager::BlockBufferInput(){
     int server_fd, client_fd;
 	int opt = 1;
@@ -97,7 +51,6 @@ void BufferManager::BlockBufferInput(){
 		}
 
 		std::string json = "";//크기?
-		// char buffer[BUFF_SIZE] = {0};
         int njson;
 		size_t ljson;
 
@@ -129,8 +82,6 @@ void BufferManager::BlockBufferInput(){
         recv(client_fd , &ldata, sizeof(ldata),0);
         totallen = ldata;
 
-        // cout << "totallen: " << totallen << endl;
-
 		while(1) {
 			if ((ndata = recv( client_fd , dataiter, ldata,0)) == -1) {
 				perror("read");
@@ -145,7 +96,6 @@ void BufferManager::BlockBufferInput(){
 
         send(client_fd, cMsg, strlen(cMsg), 0);
 
-        // cout << "## BufferQueue.push_work(BlockResult(json.c_str(), data)) ##" << endl;
 		BlockResultQueue.push_work(BlockResult(json.c_str(), data));		
         
         close(client_fd);		
@@ -156,17 +106,11 @@ void BufferManager::BlockBufferInput(){
 void BufferManager::BufferRunning(Scheduler &scheduler, TableManager &tblManager){
     while (1){
         BlockResult blockResult = BlockResultQueue.wait_and_pop();
-        // cout << "result csdname: " << blockResult.csd_name << endl;
-        // cout << "result rows: " << blockResult.rows << endl;
-        // cout << "result length: " << blockResult.length << endl;
 
-        if(m_BufferManager.find(blockResult.query_id) == m_BufferManager.end()){
-            cout << "<error> No Query ID, Init Query first! " << endl;
-            continue;
-        }else if(m_BufferManager[blockResult.query_id]->work_buffer_list.find(blockResult.work_id) 
-                    == m_BufferManager[blockResult.query_id]->work_buffer_list.end()){
-            cout << "<error> No Work ID, Init Work first!" << endl;
-            continue;            
+        if((m_BufferManager.find(blockResult.query_id) == m_BufferManager.end()) || 
+           (m_BufferManager[blockResult.query_id]->work_buffer_list.find(blockResult.work_id) 
+                    == m_BufferManager[blockResult.query_id]->work_buffer_list.end())){
+            cout << "<error> Work(" << blockResult.query_id << "-" << blockResult.work_id << ") Initialize First!" << endl;
         }   
 
         MergeBlock(blockResult, scheduler, tblManager);
@@ -179,40 +123,147 @@ void BufferManager::MergeBlock(BlockResult result, Scheduler &scheduler, TableMa
 
     Work_Buffer* myWorkBuffer = m_BufferManager[qid]->work_buffer_list[wid];
 
-    //작업 종료된 id의 데이터인지 확인
+    //작업 종료된 id의 데이터인지 확인(종료된게 들어오면 오류임)
     if(myWorkBuffer->is_done){
-        cout << "<error> Work(" << qid << "-" << wid << ") is already done!" << endl;
+        cout << "<error> Work(" << qid << "-" << wid << ") Is Already Done!" << endl;
         return;
     }
 
-    cout << "(before left/result/after left)" << "(" << myWorkBuffer->left_block_count <<"/" << result.result_block_count << "/" << myWorkBuffer->left_block_count-result.result_block_count << ")" << endl;
+    //데이터가 있는지 확인
+    if(result.length != 0){
+        int col_type, col_offset, col_len = 0;
+        string col_name;
+        vector<int> temp_offset;//테스트용
+        temp_offset.assign(result.row_offset.begin(), result.row_offset.end());
+        temp_offset.push_back(result.length);
+
+        //한 row씩 읽기
+        for(int i=0; i<result.rows; i++){
+            col_offset = result.row_offset[i];
+            int temp_test = col_offset + temp_offset[i+1] - temp_offset[i];//테스트용
+
+            //한 column씩 읽으며 vector에 저장
+            for(int j=0; j<myWorkBuffer->table_datatype.size(); j++){
+                col_name = myWorkBuffer->table_column[j];
+                col_type = myWorkBuffer->table_datatype[j];
+
+                //가변 길이 데이터인 경우 길이 확인
+                if(col_type == MySQL_VARSTRING){ 
+                    col_len = myWorkBuffer->table_offlen[j];
+                    char tempbuf[4]; 
+                    memset(tempbuf,0,4);
+                    if(col_len < 255){
+                        tempbuf[0] = result.data[col_offset];
+                        col_len = *((int *)tempbuf);
+                        col_offset += 1;
+                    }else{
+                        tempbuf[0] = result.data[col_offset];
+                        tempbuf[1] = result.data[col_offset+1];
+                        col_len = *((int *)tempbuf);
+                        col_offset += 2;
+                    }
+                }else{
+                    col_len = myWorkBuffer->table_offlen[j];   
+                }
+
+                switch (col_type){
+                    case MySQL_BYTE:{
+                        char tempbuf[col_len];//col_len = 1
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        int8_t my_value = *((int8_t *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_INT16:{
+                        char tempbuf[col_len];//col_len = 2
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        int16_t my_value = *((int16_t *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_INT32:{
+                        char tempbuf[col_len];//col_len = 3
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        int32_t my_value = *((int32_t *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_INT64:{
+                        char tempbuf[col_len];//col_len = 4
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        int64_t my_value = *((int64_t *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_FLOAT32:{
+                        char tempbuf[col_len];//col_len = 4
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        float my_value = *((float *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_DOUBLE:{
+                        char tempbuf[col_len];//col_len = 8
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        double my_value = *((double *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_NEWDECIMAL:{
+                        char tempbuf[col_len];
+                        for(int k=0; k<col_len; k++){
+                            tempbuf[col_len-k-1] = result.data[col_offset+k];
+                        }
+                        tempbuf[col_len-1] = 0x00;
+                        int my_value = *((int *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_DATE:{
+                        char tempbuf[col_len+1];//col_len = 3
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        tempbuf[3] = 0x00;
+                        int my_value = *((int *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_TIMESTAMP:{
+                        char tempbuf[col_len];//col_len = 4
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        int my_value = *((int *)tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }case MySQL_STRING:
+                     case MySQL_VARSTRING:{
+                        char tempbuf[col_len];
+                        memcpy(tempbuf,result.data+col_offset,col_len);
+                        string my_value(tempbuf);
+                        myWorkBuffer->table_data[col_name].push_back(my_value);
+                        break;
+                    }default:{
+                        cout << "<error> Type:" << col_type << " Is Not Defined!!" << endl;
+                    }
+                }
+                
+                col_offset += col_len;
+            }
+
+            if(temp_test != col_offset){//테스트용
+                cout << "<error> offset different! " << temp_test << "/" << col_offset << endl;
+            }
+        }
+    }
+
+    //남은 블록 수 조정
+    cout << "(before left/result cnt/after left)|(" << myWorkBuffer->left_block_count << "/" << result.result_block_count << "/" << myWorkBuffer->left_block_count-result.result_block_count << ")" << endl;
     scheduler.csdworkdec(result.csd_name, result.result_block_count);
     myWorkBuffer->left_block_count -= result.result_block_count;
 
-    
-
-    //필요한 블록이 다 모였는지 확인
-    if((myWorkBuffer->left_block_count == 0)){
-        cout << "Work(" << qid << "-" << wid << ") is done!" << endl;
-        
+    //블록을 다 처리했는지 개수 확인
+    if(myWorkBuffer->left_block_count == 0){
+        cout << "#Work(" << qid << "-" << wid << ") Is Done!" << endl;
         myWorkBuffer->is_done = true;
-        m_BufferManager[qid]->work_status[wid] = true;
-        m_BufferManager[qid]->table_status[myWorkBuffer->table_alias] = true;  
-
-        if(m_BufferManager[qid]->result_work_id == wid){//쿼리의 작업이 다 끝났음을 의미
-            cout << "Query(" << qid << ") is done!" << endl;
-            m_BufferManager[qid]->is_done = true;
-        }               
+        m_BufferManager[qid]->table_status[myWorkBuffer->table_alias].second = true;      
+    }else if(myWorkBuffer->left_block_count < 0){
+        cout << "<error> Work(" << qid << "-" << wid << ") Block Count = " << myWorkBuffer->left_block_count << endl;
     }
 }
 
 int BufferManager::InitWork(int qid, int wid, string table_alias,
-                            vector<vector<string>> column_projection_,
-                            vector<string> group_by_col_,
-                            vector<pair<int,string>> order_by_col_,
-                            vector<string> table_col_, vector<int> table_offset_,
-                            vector<int> table_offlen_, vector<int> table_datatype_,
-                            int bcnt, int table_type_, int is_last){
+                            vector<string> table_column_, vector<int> table_datatype,
+                            vector<int> table_offlen_, int total_block_cnt_){
     cout << "#Init Work! [" << qid << "-" << wid << "] (BufferManager)" << endl;
    
     if(m_BufferManager.find(qid) == m_BufferManager.end()){
@@ -223,20 +274,12 @@ int BufferManager::InitWork(int qid, int wid, string table_alias,
         return -1;            
     }   
 
-    Work_Buffer* workBuffer = new Work_Buffer(table_alias, bcnt, table_type_, column_projection_,
-                        table_col_, table_offset_, table_offlen_, table_datatype_);
-
-    if(group_by_col_.size() != 0){
-        workBuffer->groupby_col.assign(group_by_col_.begin(), group_by_col_.end());
-    }
+    Work_Buffer* workBuffer = new Work_Buffer(table_alias, table_column_, table_datatype, 
+                                                table_offlen_, total_block_cnt_);
     
     m_BufferManager[qid]->work_cnt++;
-    m_BufferManager[qid]->work_status[wid] = false;
-    m_BufferManager[qid]->table_status[table_alias] = false;
-
-    if(is_last){
-        m_BufferManager[qid]->result_work_id = wid;
-    }
+    m_BufferManager[qid]->work_buffer_list[wid]= workBuffer;
+    m_BufferManager[qid]->table_status[table_alias] = make_pair(wid,false);
 
     return 1;
 }
@@ -246,4 +289,61 @@ void BufferManager::InitQuery(int qid){
 
     Query_Buffer* queryBuffer = new Query_Buffer(qid);
     m_BufferManager.insert(pair<int,Query_Buffer*>(qid,queryBuffer));
+}
+
+int BufferManager::CheckTableStatus(int qid, string tname){
+    if(m_BufferManager.find(qid) == m_BufferManager.end()){
+        return -2;//쿼리 ID 오류
+    }else if(m_BufferManager[qid]->table_status.find(tname) == m_BufferManager[qid]->table_status.end()){
+        return -1;//Init한 테이블이 없음
+    }else if(!m_BufferManager[qid]->table_status[tname].second){
+        return 0;//Init 되었지만 작업 아직 안끝남
+    }else{
+        return 1;//작업 완료되어 테이블 데이터 존재
+    }
+}
+
+TableInfo BufferManager::GetTableInfo(int qid, string tname){
+    int status = CheckTableStatus(qid,tname);
+    TableInfo tableInfo;
+    if(status!=1){
+        return tableInfo;
+    }
+
+    int wid = m_BufferManager[qid]->table_status[tname].first;
+    Work_Buffer* workBuffer = m_BufferManager[qid]->work_buffer_list[wid];
+    tableInfo.table_column = workBuffer->table_column;
+    tableInfo.table_datatype = workBuffer->table_datatype;
+    tableInfo.table_offlen = workBuffer->table_offlen;
+   
+    return tableInfo;
+}
+
+TableData BufferManager::GetTableData(int qid, string tname){
+    //여기서 데이터 완료될때까지 대기
+    int status = CheckTableStatus(qid,tname);
+    TableData tableData;
+    if(status!=1){
+        return tableData;
+    }
+
+    int wid = m_BufferManager[qid]->table_status[tname].first;
+    Work_Buffer* workBuffer = m_BufferManager[qid]->work_buffer_list[wid];
+    tableData.table_data = workBuffer->table_data;
+   
+    return tableData;
+}
+
+int BufferManager::SaveTableData(int qid, string tname, TableData table_data_){
+    int status = CheckTableStatus(qid,tname);
+    if(status!=0){
+        return 0;
+    }
+
+    int wid = m_BufferManager[qid]->table_status[tname].first;
+    m_BufferManager[qid]->work_buffer_list[wid]->table_data = table_data_.table_data;
+    m_BufferManager[qid]->work_buffer_list[wid]->is_done = true;
+    m_BufferManager[qid]->table_status[tname].second = true;
+
+    return 1;
 }

@@ -74,7 +74,7 @@ typedef enum MySQL_DataType{
     MySQL_DATE = 14,
     MySQL_TIMESTAMP = 7,
     MySQL_STRING = 254,
-    // MySQL_VARSTRING = 15,
+    MySQL_VARSTRING = 15,
 }MySQL_DataType;
 
 typedef enum KETI_Type{

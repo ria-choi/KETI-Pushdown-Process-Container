@@ -21,6 +21,7 @@
 #include <list>
 #include <unordered_set>
 #include <map>
+#include <any>
 
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
@@ -201,109 +202,94 @@ struct BlockResult{
         Document document;
         document.Parse(json_); 
 
-        query_id = document["Query ID"].GetInt();
-        work_id = document["Work ID"].GetInt();
-        rows = document["nrows"].GetInt();
+        query_id = document["queryID"].GetInt();
+        work_id = document["workID"].GetInt();
+        rows = document["rowNum"].GetInt();
 
-        Value &row_offset_ = document["Row Offset"];
+        Value &row_offset_ = document["rowOffset"];
         int row_offset_size = row_offset_.Size();
         for(int i = 0; i<row_offset_size; i++){
             row_offset.push_back(row_offset_[i].GetInt());
         }
 
-        length = document["Length"].GetInt();
+        length = document["length"].GetInt();
 
         memcpy(data, data_, length);
 
-        csd_name = document["CSD Name"].GetString();
-        result_block_count = document["Result block count"].GetInt();
+        csd_name = document["csdName"].GetString();
+        result_block_count = document["resultBlockCount"].GetInt();
     }
-};
-
-struct Block_Buffer {
-    int nrows;
-    int length;
-    char data[BUFF_SIZE];
-    vector<char*> row_offset;
-
-    Block_Buffer(){
-      nrows = 0;
-      length = 0;
-      memset(&data, 0, sizeof(BUFF_SIZE));
-      row_offset.clear();
-    }
-
-    Block_Buffer(int nrows_, int length_, char* data_, vector<int> row_offset_){
-      nrows = nrows_;
-      length = length_;
-      memcpy(data, data_, length_);
-      row_offset.assign(row_offset_.begin(), row_offset_.end());
-    }
-};
-
-struct key{
-    char* data;
-};
-
-struct value{
-    char* data;
 };
 
 struct Work_Buffer {
-    string table_alias;//결과 테이블의 별칭
-    int left_block_count;
-    int table_type;
-    vector<vector<string>> column_projection;
-    vector<string> groupby_col;
-    vector<pair<int,string>> orderby_col;
-    vector<string> table_col;//최종 결과 형태여야함
-    vector<int> table_offset;
-    vector<int> table_offlen;
-    vector<int> table_datatype;
-    Block_Buffer merging_block_buffer;
-    WorkQueue<Block_Buffer> result_block_queue;//최종 결과 데이터
-    map<key,value> oper_map;
-    bool is_done;
-    int work_type;
+    string table_alias;//*결과 테이블의 별칭
+    vector<string> table_column;//*결과의 컬럼 이름
+    vector<int> return_datatype;//*결과의 컬럼 데이터 타입(돌아올때 확인)
+    vector<int> table_datatype;//저장되는 결과의 컬럼 데이터 타입(위에서 확인)
+    vector<int> table_offlen;//*결과의 컬럼 길이
+    map<string,vector<any>> table_data;//결과의 컬럼 별 데이터
+    int left_block_count;//*남은 블록 수
+    bool is_done;//워크 완료 여부
+    // int table_type;//테이블 생성 타입?
     
-    Work_Buffer(string table_alias_, int bcnt, int table_type_,
-                vector<vector<string>> column_projection_,
-                vector<string> table_col_, vector<int> table_offset_,
-                vector<int> table_offlen_, vector<int> table_datatype_){
+    Work_Buffer(string table_alias_, vector<string> table_column_, 
+                vector<int> return_datatype_, vector<int> table_offlen_,
+                int total_blobk_cnt_){
         table_alias = table_alias_;
-        left_block_count = bcnt;
-        table_type = table_type_;
-        column_projection.assign(column_projection_.begin(),column_projection_.end());
-        groupby_col.clear();
-        orderby_col.clear();
-        table_col.assign(table_col_.begin(),table_col_.end());
-        table_offset.assign(table_offset_.begin(),table_offset_.end());
+        table_column.assign(table_column_.begin(),table_column_.end());
+        return_datatype.assign(return_datatype_.begin(),return_datatype_.end());
         table_offlen.assign(table_offlen_.begin(),table_offlen_.end());
-        table_datatype.assign(table_datatype_.begin(),table_datatype_.end());
-        merging_block_buffer = Block_Buffer();
-        result_block_queue.qclear();
-        oper_map.clear();
+        left_block_count = total_blobk_cnt_;
         is_done = false;
+        table_datatype.clear();
+        vector<string>::iterator ptr1;
+        for(ptr1 = table_column_.begin(); ptr1 != table_column_.end(); ptr1++){
+          table_data.insert({(*ptr1),{}});
+        }
+        vector<int>::iterator ptr2;
+        for(ptr2 = return_datatype.begin(); ptr2 != return_datatype.end(); ptr2++){
+          if((*ptr2)==MySQL_BYTE){
+            table_datatype.push_back(KETI_INT8);
+          }else if((*ptr2)==MySQL_VARSTRING){
+            table_datatype.push_back(MySQL_STRING);
+          }else{
+            table_datatype.push_back((*ptr2));
+          }
+        }
     }
 };
 
 struct Query_Buffer{
   int query_id;
-  int work_cnt;
-  int result_work_id;
-  unordered_map<int,Work_Buffer*> work_buffer_list;
-  unordered_map<int,int> work_status;//<work_id, work_status>
-  unordered_map<string,int> table_status;//<table_name/alias, is_done>
-  bool is_done;
+  int work_cnt;//저장된 워크 개수
+  unordered_map<int,Work_Buffer*> work_buffer_list;//워크버퍼
+  unordered_map<string,pair<int,int>> table_status;//테이블별 상태<table_name/alias, <work_id,is_done> >
 
   Query_Buffer(int qid)
   :query_id(qid){
     work_cnt = 0;
-    result_work_id = -1;
     work_buffer_list.clear();
-    work_status.clear();
     table_status.clear();
-    is_done = false;
+  }
+};
+
+struct TableData{
+  map<string,vector<any>> table_data;//결과의 컬럼 별 데이터
+
+  TableData(){
+    table_data.clear();
+  }
+};
+
+struct TableInfo{
+  vector<string> table_column;//*결과의 컬럼 이름
+  vector<int> table_datatype;//저장되는 결과의 컬럼 데이터 타입
+  vector<int> table_offlen;//*결과의 컬럼 길이
+
+  TableInfo(){
+    table_column.clear();
+    table_datatype.clear();
+    table_offlen.clear();
   }
 };
 
@@ -319,14 +305,13 @@ public:
     void MergeBlock(BlockResult result, Scheduler &scheduler, TableManager &tblManager);
     // int GetData(Block_Buffer &dest);
     int InitWork(int qid, int wid, string table_alias,
-                vector<vector<string>> column_projection_,
-                vector<string> group_by_col,
-                vector<pair<int,string>> order_by_col,
-                vector<string> table_col_, vector<int> table_offset_,
-                vector<int> table_offlen_, vector<int> table_datatype_,
-                int bcnt, int table_type_, int is_last);
+                 vector<string> table_column_, vector<int> table_datatype,
+                 vector<int> table_offlen_, int total_blobk_cnt_);
     void InitQuery(int qid);
     int CheckTableStatus(int qid, string tname);
+    TableInfo GetTableInfo(int qid, string tname);
+    TableData GetTableData(int qid, string tname);
+    int SaveTableData(int qid, string tname, TableData table_data_);
 
     unordered_map<int, struct Query_Buffer*> my_buffer_m(){
         return this->m_BufferManager;

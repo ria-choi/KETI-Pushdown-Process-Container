@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.snippet_sample";
+option java_outer_classname = "snippet_sample_Proto";
+option objc_class_prefix = "SSP";
+
+package snippetsample;
+
+service SnippetSample {
+  rpc SetSnippet (stream Snippet) returns (stream google.protobuf.Empty) {}
+  rpc Run (Request) returns (Result) {}
+}
+
+message Snippet {
+	int32 queryid = 1;
+	int32 workid = 2;
+	string snippet = 3;
+}
+message Request{
+  int32 queryid = 1;
+}
+message Result {
+  string value = 1;
+}
