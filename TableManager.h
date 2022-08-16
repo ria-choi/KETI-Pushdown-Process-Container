@@ -7,6 +7,7 @@
 using namespace std;
 
 class TableManager{	
+	// TableManager()
 public:
 	struct ColumnSchema {
 		std::string column_name;

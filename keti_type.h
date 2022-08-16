@@ -90,10 +90,12 @@ typedef enum KETI_Type{
     KETI_STRING,
 }KETI_Type;
 
-typedef enum Buff_Table_Type{
-    Scan_Table,
-    Derived_Table,
-}Buff_Table_Type;
+typedef enum Work_Status_Type{
+    QueryIDError,
+    NonInitTable,
+    NotFinished,
+    WorkDone,
+}Work_Status_Type;
 
 typedef enum Merge_Work_Type{
     

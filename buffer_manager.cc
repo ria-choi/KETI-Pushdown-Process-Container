@@ -123,6 +123,8 @@ void BufferManager::MergeBlock(BlockResult result, Scheduler &scheduler, TableMa
 
     Work_Buffer* myWorkBuffer = m_BufferManager[qid]->work_buffer_list[wid];
 
+    unique_lock<mutex> lock(myWorkBuffer->mu);
+
     //작업 종료된 id의 데이터인지 확인(종료된게 들어오면 오류임)
     if(myWorkBuffer->is_done){
         cout << "<error> Work(" << qid << "-" << wid << ") Is Already Done!" << endl;
@@ -255,7 +257,8 @@ void BufferManager::MergeBlock(BlockResult result, Scheduler &scheduler, TableMa
     if(myWorkBuffer->left_block_count == 0){
         cout << "#Work(" << qid << "-" << wid << ") Is Done!" << endl;
         myWorkBuffer->is_done = true;
-        m_BufferManager[qid]->table_status[myWorkBuffer->table_alias].second = true;      
+        m_BufferManager[qid]->table_status[myWorkBuffer->table_alias].second = true;
+        myWorkBuffer->cond.notify_all();      
     }else if(myWorkBuffer->left_block_count < 0){
         cout << "<error> Work(" << qid << "-" << wid << ") Block Count = " << myWorkBuffer->left_block_count << endl;
     }
@@ -293,13 +296,13 @@ void BufferManager::InitQuery(int qid){
 
 int BufferManager::CheckTableStatus(int qid, string tname){
     if(m_BufferManager.find(qid) == m_BufferManager.end()){
-        return -2;//쿼리 ID 오류
+        return QueryIDError;//쿼리 ID 오류
     }else if(m_BufferManager[qid]->table_status.find(tname) == m_BufferManager[qid]->table_status.end()){
-        return -1;//Init한 테이블이 없음
+        return NonInitTable;//Init한 테이블이 없음
     }else if(!m_BufferManager[qid]->table_status[tname].second){
-        return 0;//Init 되었지만 작업 아직 안끝남
+        return NotFinished;//Init 되었지만 작업 아직 안끝남
     }else{
-        return 1;//작업 완료되어 테이블 데이터 존재
+        return WorkDone;//작업 완료되어 테이블 데이터 존재
     }
 }
 
@@ -323,27 +326,77 @@ TableData BufferManager::GetTableData(int qid, string tname){
     //여기서 데이터 완료될때까지 대기
     int status = CheckTableStatus(qid,tname);
     TableData tableData;
-    if(status!=1){
-        return tableData;
-    }
 
-    int wid = m_BufferManager[qid]->table_status[tname].first;
-    Work_Buffer* workBuffer = m_BufferManager[qid]->work_buffer_list[wid];
-    tableData.table_data = workBuffer->table_data;
+    switch(status){
+        case QueryIDError:
+        case NonInitTable:{
+            tableData.valid = false;
+            break;
+        }case NotFinished:{
+            int wid = m_BufferManager[qid]->table_status[tname].first;
+            Work_Buffer* workBuffer = m_BufferManager[qid]->work_buffer_list[wid];
+            
+            unique_lock<mutex> lock(workBuffer->mu);
+            workBuffer->cond.wait(lock);
+
+            tableData.table_data = workBuffer->table_data;
+            break;
+        }case WorkDone:{
+            int wid = m_BufferManager[qid]->table_status[tname].first;
+            Work_Buffer* workBuffer = m_BufferManager[qid]->work_buffer_list[wid];
+            unique_lock<mutex> lock(workBuffer->mu);
+            tableData.table_data = workBuffer->table_data;
+            break;
+        }
+    }
    
     return tableData;
 }
 
-int BufferManager::SaveTableData(int qid, string tname, TableData table_data_){
+//이건 MQM에서 연산한 결과 테이블 전체 저장할 때
+int BufferManager::SaveTableData(int qid, string tname, unordered_map<string,vector<any>> table_data_){
     int status = CheckTableStatus(qid,tname);
-    if(status!=0){
+    if(status!=WorkDone){
         return 0;
     }
-
+    //wal에서 save하는거 따로 구현해야함!!!
     int wid = m_BufferManager[qid]->table_status[tname].first;
-    m_BufferManager[qid]->work_buffer_list[wid]->table_data = table_data_.table_data;
+    Work_Buffer* workBuffer = m_BufferManager[qid]->work_buffer_list[wid];
+    unique_lock<mutex> lock(workBuffer->mu);
+
+    m_BufferManager[qid]->work_buffer_list[wid]->table_data = table_data_;
     m_BufferManager[qid]->work_buffer_list[wid]->is_done = true;
     m_BufferManager[qid]->table_status[tname].second = true;
+
+    return 1;
+}
+
+int BufferManager::DeleteTableData(int qid, string tname){
+    int status = CheckTableStatus(qid,tname);
+
+    switch(status){
+        case QueryIDError:
+        case NonInitTable:{
+            return -1;
+        }case NotFinished:{
+            int wid = m_BufferManager[qid]->table_status[tname].first;
+            Work_Buffer* workBuffer = m_BufferManager[qid]->work_buffer_list[wid];
+            
+            unique_lock<mutex> lock(workBuffer->mu);
+            workBuffer->cond.wait(lock);
+
+        }case WorkDone:{
+            //꼭 MQM에서 Get Table Data 한 다음에 Delete Table Data 해야함
+            int wid = m_BufferManager[qid]->table_status[tname].first;
+            Work_Buffer* workBuffer = m_BufferManager[qid]->work_buffer_list[wid];
+            unique_lock<mutex> lock(workBuffer->mu);
+
+            for(auto i : workBuffer->table_data){//테이블 컬럼 데이터 삭제
+                i.second.clear();
+            }
+            return 0;
+        }
+    }
 
     return 1;
 }

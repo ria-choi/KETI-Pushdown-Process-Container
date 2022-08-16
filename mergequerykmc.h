@@ -15,13 +15,65 @@
 
 #include "keti_type.h"
 
+#include "buffer_manager.h"
+
 using namespace std;
 using namespace rapidjson;
 
+#define BufferSize 40960 //사용자 지정 wal 버퍼 크기
+
+
+struct Average{
+    int count;
+    any value;
+};
+
+class sortclass{
+    public:
+        unordered_map<string,any> value;
+        int ordercount;
+        vector<string> ordername;
+
+        bool operator <(sortclass &sortbuf){
+            for(int i = 0; i < ordercount; i++){
+                if(this->value[ordername[i]].type() == typeid(int&)){
+                    if(any_cast<int>(this->value[ordername[i]]) == any_cast<int>(sortbuf.value[ordername[i]])){
+                        continue;
+                    }else{
+                        // if() asc desc 구분 필요
+                        return any_cast<int>(this->value[ordername[i]]) < any_cast<int>(sortbuf.value[ordername[i]]);
+                    }
+                }else if(this->value[ordername[i]].type() == typeid(float&)){
+                    if(any_cast<float>(this->value[ordername[i]]) == any_cast<float>(sortbuf.value[ordername[i]])){
+                        continue;
+                    }else{
+                        // if() asc desc 구분 필요
+                        return any_cast<float>(this->value[ordername[i]]) < any_cast<float>(sortbuf.value[ordername[i]]);
+                    }
+                }else{
+                    if(any_cast<string>(this->value[ordername[i]]) == any_cast<string>(sortbuf.value[ordername[i]])){
+                        continue;
+                    }else{
+                        // if() asc desc 구분 필요
+                        return any_cast<string>(this->value[ordername[i]]) < any_cast<string>(sortbuf.value[ordername[i]]);
+                    }
+                }
+            }
+            if(this->value[ordername[0]].type() == typeid(int&)){
+                return any_cast<int>(this->value[ordername[0]]) < any_cast<int>(sortbuf.value[ordername[0]]);
+            }else if(this->value[ordername[0]].type() == typeid(float&)){
+                return any_cast<float>(this->value[ordername[0]]) < any_cast<float>(sortbuf.value[ordername[0]]);
+            }else{
+                return any_cast<string>(this->value[ordername[0]]) < any_cast<string>(sortbuf.value[ordername[0]]);
+            }
+        }
+};
+
+bool compare(sortclass &sortbuffer);
 
 void Init(Value snippet);
 
-unordered_map<string,vector<any>> GetBufMTable(string tablename,SnippetStruct snippet);
+unordered_map<string,vector<any>> GetBufMTable(string tablename,SnippetStruct snippet, BufferManager &buff);
 
 void GetAccessData();
 
@@ -37,13 +89,39 @@ void SaveTable();
 
 void makeTable(SnippetStruct snippet);
 
-void JoinTable(SnippetStruct snippet);
+void JoinTable(SnippetStruct snippet, BufferManager &buff);
 
 bool IsJoin(SnippetStruct snippet);
 
-void Aggregation(SnippetStruct snippet);
+void Aggregation(SnippetStruct snippet, BufferManager &buff);
 
 any Postfix(unordered_map<string,vector<any>> tablelist, vector<Projection> data, unordered_map<string,vector<any>> savedTable);
+
+void InnerJoin(SnippetStruct snippet, BufferManager &buff);
+
+void NaturalJoin(SnippetStruct snippet, BufferManager &buff);
+
+void OuterFullJoin(SnippetStruct snippet, BufferManager &buff);
+
+void OuterLeftJoin(SnippetStruct snippet, BufferManager &buff);
+
+void OuterRightJoin(SnippetStruct snippet, BufferManager &buff);
+
+void CrossJoin(SnippetStruct snippet, BufferManager &buff);
+
+void SelfJoin(SnippetStruct snippet, BufferManager &buff);
+
+void GroupBy(SnippetStruct snippet, BufferManager &buff);
+
+void OrderBy(SnippetStruct snippet, BufferManager &buff);
+
+void GetWALManager(char *data, string TableName);
+
+void DependencyLoopQuery();
+
+void Having();
+
+void Filtering(SnippetStruct snippet);
 
 struct Projection{
     string value;
@@ -78,7 +156,7 @@ struct SnippetStruct{
         int tableblocknum;
         int tablerownum;
         vector<string> tablename;
-        vector<string> tableAlias;
+        string tableAlias;
         vector<vector<Projection>> columnProjection;
         vector<string> columnFiltering;
         vector<string> groupBy;
@@ -87,7 +165,7 @@ struct SnippetStruct{
         unordered_map<string,VectorType> tabledata;
         unordered_map<string,VectorType> resultdata;
         unordered_map<string, StackType> resultstack;
-        char* data;
+        char data[BufferSize];
 
         SnippetStruct(int work_id_, string sstfilename_,
             Value& block_info_list_,

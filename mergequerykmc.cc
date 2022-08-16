@@ -17,11 +17,11 @@ void Init(Value Query)
     }
 }
 
-unordered_map<string,vector<any>> GetBufMTable(string tablename, SnippetStruct snippet)
+unordered_map<string,vector<any>> GetBufMTable(string tablename, SnippetStruct snippet, BufferManager &buff)
 {
 
-        unordered_map<string,vector<any>> table = buffermanager.gettable(tablename);
-        buffermanager.gettableinfo(snippet); //테이블 데이터 말고 type, name, rownum, blocknum까지 채워줌
+        unordered_map<string,vector<any>> table = buff.GetTableData(snippet.query_id, tablename).table_data;
+        buff.GetTableInfo(snippet.query_id, tablename); //테이블 데이터 말고 type, name, rownum, blocknum까지 채워줌
         return table;    
      
 }
@@ -191,12 +191,12 @@ any Postfix(unordered_map<string,vector<any>> tablelist, vector<Projection> data
 
 }
 
-void Aggregation(SnippetStruct snippet){
+void Aggregation(SnippetStruct snippet, BufferManager &buff){
     unordered_map<string,vector<any>> tablelist;
 
     for(int i = 0; i < snippet.tablename.size(); i++){
         //혹시 모를 중복 제거 필요
-        unordered_map<string,vector<any>> table = GetBufMTable(snippet.tablename[i], snippet);
+        unordered_map<string,vector<any>> table = GetBufMTable(snippet.tablename[i], snippet, buff);
         for(auto it = table.begin(); it != table.end(); i++){
             pair<string,vector<any>> pair;
             pair = *it;
@@ -212,11 +212,11 @@ void Aggregation(SnippetStruct snippet){
     }
 }
 
-void JoinTable(SnippetStruct snippet){
+void JoinTable(SnippetStruct snippet, BufferManager &buff){
     vector<unordered_map<string,vector<any>>> tablelist;
 
     for(int i = 0; i < 2; i++){
-        unordered_map<string,vector<any>> table = GetBufMTable(snippet.tablename[i], snippet);
+        unordered_map<string,vector<any>> table = GetBufMTable(snippet.tablename[i], snippet, buff);
         tablelist.push_back(table);
     }
 
@@ -313,137 +313,208 @@ void JoinTable(SnippetStruct snippet){
 
         }
     }
-    buffermanager.savetable(savedTable);
+    buff.SaveTableData(snippet.query_id,snippet.tableAlias,savedTable);
 }
 
-
-
-void GetAccessData()
-{ // access lib 구현 후 작성(구현 x)
+void NaturalJoin(SnippetStruct snippet, BufferManager &buff){
+    //조인 조건 없음 컬럼명이 같은 모든 데이터 비교해서 같으면 조인
 }
 
-void ColumnProjection(SnippetStruct snippet)
-{
-    int nullsize = 0; //논널비트에 대한 정보 테이블 매니저에 추가 해야함
-    //결과를 저장할 벡터 + 데이터를 가져올 벡터 필요
-    // unordered_map<string, int> typemap;
-    snippet.tabledata.clear();
-    snippet.resultstack.clear();
-    snippet.resultdata.clear();
-    for (int i = 0; i < snippet.tableAlias.size(); i++)
-    {
-        VectorType vectortype;
-        vectortype.type = snippet.savetype[i];
-        snippet.resultdata.insert(make_pair(snippet.tableAlias[i], vectortype));
-        StackType stacktype;
-        stacktype.type = snippet.savetype[i];
-        snippet.resultstack.insert(make_pair(snippet.tableAlias[i], stacktype));
-        // snippet.resultstack.insert(make_pair(snippet.tableAlias[i], StackType{}));
-    }
-    for (int i = 0; i < snippet.table_col.size(); i++)
-    {
-        // typemap.insert(make_pair(snippet.table_col[i], snippet.table_datatype[i]));
-        VectorType tmpvector;
+void OuterFullJoin(SnippetStruct snippet, BufferManager &buff){
+    //같은 값이 없을경우 null을 채워 모든 데이터 유지
+}
 
-        snippet.tabledata.insert(make_pair(snippet.table_col[i], tmpvector));
-    }
-    // for (int n = 0; n < snippet.tableblocknum; n++)
-    // {
-    for (int i = 0; i < snippet.columnProjection.size(); i++)
-    {
-        // vector<string> a = buffermanager.gettable(snippet.tableProjection[i])
-        // stack<string> tmpstack;
-        switch (atoi(snippet.columnProjection[i][0].value.c_str()))
-        {
-        case KETI_Column_name:
-            for (int j = 1; j < snippet.columnProjection[i].size(); j++)
-            {
-                for (int k = 0; k < snippet.tablerownum; k++)
-                {
-                    switch (snippet.columnProjection[i][j].type)
-                    {
-                    case PROJECTION_STRING:
-                        //진짜 string or decimal
-                        /* code */
-                        break;
-                    case PROJECTION_INT:
-                        /* code */
-                        break;
-                    case PROJECTION_FLOAT:
-                        /* code */
-                        break;
-                    case PROJECTION_COL:
-                        //버퍼매니저에서 데이터 가져와야함
-                        /* code */
-                        // snippet.tabledata[snippet.tableProjection[i][j].value].type
-                        // if(typemap[snippet.tableProjection[i][j].value] == 3){
-                        //     // buffermanager.gettable()
+void OuterLeftJoin(SnippetStruct snippet, BufferManager &buff){
+    //왼쪽 테이블 기준으로 같은 값이 없으면 null을 채움
+}
 
+void OuterRightJoin(SnippetStruct snippet, BufferManager &buff){
+    //오른쪽 테이블 기준으로 같은 값이 없으면 null을 채움
+}
 
-                        // }else if(typemap[snippet.tableProjection[i][j].value] == 246){
+void CrossJoin(SnippetStruct snippet, BufferManager &buff){
+    //테이블 곱 조인
+}
 
-                        // }else if(typemap[snippet.tableProjection[i][j].value] == 14){
+void InnerJoin(SnippetStruct snippet, BufferManager &buff){
 
-                        // }else if(typemap[snippet.tableProjection[i][j].value] == 4){
+}
 
-                        // }
-                        if(snippet.resultstack[snippet.tableAlias[i]].type == 1){ //int
-                            
-                        }else if(snippet.resultstack[snippet.tableAlias[i]].type == 2){ //float
+void GroupBy(SnippetStruct snippet, BufferManager &buff){
+    int groupbycount = snippet.groupBy.size();
+    unordered_map<string,vector<any>> table = GetBufMTable(snippet.tableAlias, snippet, buff);
+    //무슨 테이블로 저장이 되어있을지에 대한 논의 필요(스니펫)
 
-                        }
+    
 
-                        break;
-                    case PROJECTION_OPER:
-                        break;
-                    default:
-                        break;
-                    }
-                }
-            }
+}
 
-            /* code */
-            break;
-        case KETI_SUM:
-            /* code */
-            break;
-        case KETI_AVG:
-            /* code */
-            break;
-        case KETI_COUNT:
-            /* code */
-            break;
-        case KETI_COUNTALL:
-            /* code */
-            break;
-        case KETI_MIN:
-            /* code */
-            break;
-        case KETI_MAX:
-            /* code */
-            break;
-        case KETI_CASE:
-            /* code */
-            break;
-        case KETI_WHEN:
-            /* code */
-            break;
-        case KETI_THEN:
-            /* code */
-            break;
-        case KETI_ELSE:
-            /* code */
-            break;
-        case KETI_LIKE:
-            /* code */
-            break;
-        default:
-            break;
+void OrderBy(SnippetStruct snippet, BufferManager &buff){
+    unordered_map<string,vector<any>> table = GetBufMTable(snippet.tableAlias, snippet, buff);
+    int ordercount = snippet.orderBy.size();
+    vector<sortclass> sortbuf;
+    for(int i = 0; i < table[snippet.orderBy[0]].size(); i++){
+        sortclass tmpclass;
+        unordered_map<string,any> value;
+        for(int j = 0; j < ordercount; j++){
+            tmpclass.ordername.push_back(snippet.orderBy[j]);
         }
-        // }
+        for(auto j = table.begin(); j != table.end(); j++){
+            pair<string,vector<any>> tmppair = *j;
+            value.insert(make_pair(tmppair.first,tmppair.second[i]));
+        }
+        tmpclass.value = value;
+        tmpclass.ordercount = ordercount;
+        sortbuf.push_back(tmpclass);
     }
+    sort(sortbuf.begin(),sortbuf.end());
+
+    unordered_map<string,vector<any>> orderedtable;
+    for(int i = 0; i < sortbuf.size(); i++){
+        // orderedtable.insert(make_pair())
+        for(auto j = sortbuf[i].value.begin(); j != sortbuf[i].value.end(); j++){
+            pair<string,any> tmppair = *j;
+            if(i == 0){
+                vector<any> tmpvector;
+                orderedtable.insert(make_pair(tmppair.first,tmpvector));
+            }
+            orderedtable[tmppair.first].push_back(tmppair.second);
+        }
+    }
+    buff.DeleteTableData(snippet.query_id,snippet.tableAlias);
+    buff.SaveTableData(snippet.query_id,snippet.tableAlias,orderedtable);
 }
 
-void GetColOff()
-{
-}
+
+
+
+
+// void GetAccessData()
+// { // access lib 구현 후 작성(구현 x)
+// }
+
+// void ColumnProjection(SnippetStruct snippet)
+// {
+//     int nullsize = 0; //논널비트에 대한 정보 테이블 매니저에 추가 해야함
+//     //결과를 저장할 벡터 + 데이터를 가져올 벡터 필요
+//     // unordered_map<string, int> typemap;
+//     snippet.tabledata.clear();
+//     snippet.resultstack.clear();
+//     snippet.resultdata.clear();
+//     for (int i = 0; i < snippet.tableAlias.size(); i++)
+//     {
+//         VectorType vectortype;
+//         vectortype.type = snippet.savetype[i];
+//         snippet.resultdata.insert(make_pair(snippet.tableAlias[i], vectortype));
+//         StackType stacktype;
+//         stacktype.type = snippet.savetype[i];
+//         snippet.resultstack.insert(make_pair(snippet.tableAlias[i], stacktype));
+//         // snippet.resultstack.insert(make_pair(snippet.tableAlias[i], StackType{}));
+//     }
+//     for (int i = 0; i < snippet.table_col.size(); i++)
+//     {
+//         // typemap.insert(make_pair(snippet.table_col[i], snippet.table_datatype[i]));
+//         VectorType tmpvector;
+
+//         snippet.tabledata.insert(make_pair(snippet.table_col[i], tmpvector));
+//     }
+//     // for (int n = 0; n < snippet.tableblocknum; n++)
+//     // {
+//     for (int i = 0; i < snippet.columnProjection.size(); i++)
+//     {
+//         // vector<string> a = buffermanager.gettable(snippet.tableProjection[i])
+//         // stack<string> tmpstack;
+//         switch (atoi(snippet.columnProjection[i][0].value.c_str()))
+//         {
+//         case KETI_Column_name:
+//             for (int j = 1; j < snippet.columnProjection[i].size(); j++)
+//             {
+//                 for (int k = 0; k < snippet.tablerownum; k++)
+//                 {
+//                     switch (snippet.columnProjection[i][j].type)
+//                     {
+//                     case PROJECTION_STRING:
+//                         //진짜 string or decimal
+//                         /* code */
+//                         break;
+//                     case PROJECTION_INT:
+//                         /* code */
+//                         break;
+//                     case PROJECTION_FLOAT:
+//                         /* code */
+//                         break;
+//                     case PROJECTION_COL:
+//                         //버퍼매니저에서 데이터 가져와야함
+//                         /* code */
+//                         // snippet.tabledata[snippet.tableProjection[i][j].value].type
+//                         // if(typemap[snippet.tableProjection[i][j].value] == 3){
+//                         //     // buffermanager.gettable()
+
+
+//                         // }else if(typemap[snippet.tableProjection[i][j].value] == 246){
+
+//                         // }else if(typemap[snippet.tableProjection[i][j].value] == 14){
+
+//                         // }else if(typemap[snippet.tableProjection[i][j].value] == 4){
+
+//                         // }
+//                         if(snippet.resultstack[snippet.tableAlias[i]].type == 1){ //int
+                            
+//                         }else if(snippet.resultstack[snippet.tableAlias[i]].type == 2){ //float
+
+//                         }
+
+//                         break;
+//                     case PROJECTION_OPER:
+//                         break;
+//                     default:
+//                         break;
+//                     }
+//                 }
+//             }
+
+//             /* code */
+//             break;
+//         case KETI_SUM:
+//             /* code */
+//             break;
+//         case KETI_AVG:
+//             /* code */
+//             break;
+//         case KETI_COUNT:
+//             /* code */
+//             break;
+//         case KETI_COUNTALL:
+//             /* code */
+//             break;
+//         case KETI_MIN:
+//             /* code */
+//             break;
+//         case KETI_MAX:
+//             /* code */
+//             break;
+//         case KETI_CASE:
+//             /* code */
+//             break;
+//         case KETI_WHEN:
+//             /* code */
+//             break;
+//         case KETI_THEN:
+//             /* code */
+//             break;
+//         case KETI_ELSE:
+//             /* code */
+//             break;
+//         case KETI_LIKE:
+//             /* code */
+//             break;
+//         default:
+//             break;
+//         }
+//         // }
+//     }
+// }
+
+// void GetColOff()
+// {
+// }

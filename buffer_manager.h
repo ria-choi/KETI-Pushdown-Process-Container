@@ -227,9 +227,11 @@ struct Work_Buffer {
     vector<int> return_datatype;//*결과의 컬럼 데이터 타입(돌아올때 확인)
     vector<int> table_datatype;//저장되는 결과의 컬럼 데이터 타입(위에서 확인)
     vector<int> table_offlen;//*결과의 컬럼 길이
-    map<string,vector<any>> table_data;//결과의 컬럼 별 데이터
+    unordered_map<string,vector<any>> table_data;//결과의 컬럼 별 데이터
     int left_block_count;//*남은 블록 수
     bool is_done;//워크 완료 여부
+    condition_variable cond;
+    mutex mu;
     // int table_type;//테이블 생성 타입?
     
     Work_Buffer(string table_alias_, vector<string> table_column_, 
@@ -274,9 +276,11 @@ struct Query_Buffer{
 };
 
 struct TableData{
-  map<string,vector<any>> table_data;//결과의 컬럼 별 데이터
+  bool valid;//결과의 유효성
+  unordered_map<string,vector<any>> table_data;//결과의 컬럼 별 데이터
 
   TableData(){
+    valid = true;
     table_data.clear();
   }
 };
@@ -295,6 +299,7 @@ struct TableInfo{
 
 class BufferManager{	
 public:
+    // BufferManager();
     BufferManager(Scheduler &scheduler, TableManager &tblManager){
       InitBufferManager(scheduler, tblManager);
     }
@@ -311,7 +316,8 @@ public:
     int CheckTableStatus(int qid, string tname);
     TableInfo GetTableInfo(int qid, string tname);
     TableData GetTableData(int qid, string tname);
-    int SaveTableData(int qid, string tname, TableData table_data_);
+    int SaveTableData(int qid, string tname, unordered_map<string,vector<any>> table_data_);
+    int DeleteTableData(int qid, string tname);
 
     unordered_map<int, struct Query_Buffer*> my_buffer_m(){
         return this->m_BufferManager;
