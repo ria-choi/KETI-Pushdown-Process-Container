@@ -23,9 +23,10 @@ using namespace rapidjson;
 #define BufferSize 40960 //사용자 지정 wal 버퍼 크기
 
 
-struct Average{
+struct groupby{
     int count;
-    any value;
+    vector<any> value;
+    vector<any> savedkey;
 };
 
 class sortclass{

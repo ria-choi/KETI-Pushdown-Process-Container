@@ -13,7 +13,7 @@ void Init(Value Query)
     }
     else
     { 
-        JoinTable(snippet);
+        // JoinTable(snippet);
     }
 }
 
@@ -345,8 +345,180 @@ void GroupBy(SnippetStruct snippet, BufferManager &buff){
     unordered_map<string,vector<any>> table = GetBufMTable(snippet.tableAlias, snippet, buff);
     //무슨 테이블로 저장이 되어있을지에 대한 논의 필요(스니펫)
 
-    
+    // unordered_map<>
+    unordered_map<string,groupby> groupbymap;
+    for(int i = 0; i < table[snippet.groupBy[0]].size(); i++){
+        string key;
+        vector<any> tmpsavedkey;
+        for(int j = 0; j < groupbycount; j++){
+            if(table[snippet.groupBy[j]][i].type() == typeid(int&)){
+                string tmpstring = to_string(any_cast<int>(table[snippet.groupBy[j]][i]));
+                key = key + tmpstring + ",";
+            }else if(table[snippet.groupBy[j]][i].type() == typeid(float&)){
+                std::stringstream sstream;
+                sstream << any_cast<int>(table[snippet.groupBy[j]][i]);
+                key = key + sstream.str() + ",";
+            }else{
+                key = key + any_cast<string>(table[snippet.groupBy[j]][i]);
+            }
+            tmpsavedkey.push_back(table[snippet.groupBy[j]][i]);
+        }
+        if(groupbymap.find(key) == groupbymap.end()){
+            groupby tmpgroupby;
+            tmpgroupby.count = 0;
+            groupbymap.insert(make_pair(key,tmpgroupby));
+        }
+        groupbymap[key].savedkey = tmpsavedkey;
+        for(int j = 0; j < snippet.columnProjection.size(); j++){
+            if(snippet.columnProjection[j][0].value == "0"){
+                if(groupbymap[key].value.size() < j + 1){
+                    // groupbymap[key].value.push_back(table[])
+                    //0이라도 산술연산 가능성 있음
+                    stack<any> tmpstack;
+                    for(int k = 1; k < snippet.columnProjection[j].size(); k++){
+                        if(snippet.columnProjection[j][k].type == 2){
+                            //산술연산자 +-*/
+                            any tmp1 = tmpstack.top();
+                            tmpstack.pop();
+                            any tmp2 = tmpstack.top();
+                            tmpstack.pop();
+                            if(snippet.columnProjection[j][k].value == "+"){
+                                // tmpstack.push()
+                                if(tmp1.type() == typeid(int&)){
+                                    tmpstack.push(any_cast<int>(tmp1) + any_cast<int>(tmp2));
+                                }else if(tmp1.type() == typeid(float&)){
+                                    tmpstack.push(any_cast<float>(tmp1) + any_cast<float>(tmp2));
+                                }else{
+                                    //string이 산술연산이 가능한가?   
+                                }
+                            }else if(snippet.columnProjection[j][k].value == "-"){
+                                if(tmp1.type() == typeid(int&)){
+                                    tmpstack.push(any_cast<int>(tmp1) - any_cast<int>(tmp2));
+                                }else if(tmp1.type() == typeid(float&)){
+                                    tmpstack.push(any_cast<float>(tmp1) - any_cast<float>(tmp2));
+                                }else{
+                                    //string이 산술연산이 가능한가?   
+                                }
+                            }else if(snippet.columnProjection[j][k].value == "*"){
+                                if(tmp1.type() == typeid(int&)){
+                                    tmpstack.push(any_cast<int>(tmp1) * any_cast<int>(tmp2));
+                                }else if(tmp1.type() == typeid(float&)){
+                                    tmpstack.push(any_cast<float>(tmp1) * any_cast<float>(tmp2));
+                                }else{
+                                    //string이 산술연산이 가능한가?   
+                                }                                
+                            }else if(snippet.columnProjection[j][k].value == "/"){
+                                if(tmp1.type() == typeid(int&)){
+                                    tmpstack.push(any_cast<int>(tmp1) / any_cast<int>(tmp2));
+                                }else if(tmp1.type() == typeid(float&)){
+                                    tmpstack.push(any_cast<float>(tmp1) / any_cast<float>(tmp2));
+                                }else{
+                                    //string이 산술연산이 가능한가?   
+                                }                                
+                            }
+                        }else if(snippet.columnProjection[j][k].type == 3){
+                            //컬럼
+                            tmpstack.push(table[snippet.columnProjection[j][k].value]);
+                        }else{
+                            //벨류
+                            tmpstack.push(snippet.columnProjection[j][k].value);
+                        }
+                    }
+                    groupbymap[key].value.push_back(tmpstack.top());
+                }
+                continue;
+            }else{
+                stack<any> tmpstack;
+                for(int k = 1; k < snippet.columnProjection[j].size(); k++){
+                    if(snippet.columnProjection[j][k].type == 2){
+                            //산술연산자 +-*/
+                            any tmp1 = tmpstack.top();
+                            tmpstack.pop();
+                            any tmp2 = tmpstack.top();
+                            tmpstack.pop();
+                            if(snippet.columnProjection[j][k].value == "+"){
+                                // tmpstack.push()
+                                if(tmp1.type() == typeid(int&)){
+                                    tmpstack.push(any_cast<int>(tmp1) + any_cast<int>(tmp2));
+                                }else if(tmp1.type() == typeid(float&)){
+                                    tmpstack.push(any_cast<float>(tmp1) + any_cast<float>(tmp2));
+                                }else{
+                                    //string이 산술연산이 가능한가?   
+                                }
+                            }else if(snippet.columnProjection[j][k].value == "-"){
+                                if(tmp1.type() == typeid(int&)){
+                                    tmpstack.push(any_cast<int>(tmp1) - any_cast<int>(tmp2));
+                                }else if(tmp1.type() == typeid(float&)){
+                                    tmpstack.push(any_cast<float>(tmp1) - any_cast<float>(tmp2));
+                                }else{
+                                    //string이 산술연산이 가능한가?   
+                                }
+                            }else if(snippet.columnProjection[j][k].value == "*"){
+                                if(tmp1.type() == typeid(int&)){
+                                    tmpstack.push(any_cast<int>(tmp1) * any_cast<int>(tmp2));
+                                }else if(tmp1.type() == typeid(float&)){
+                                    tmpstack.push(any_cast<float>(tmp1) * any_cast<float>(tmp2));
+                                }else{
+                                    //string이 산술연산이 가능한가?   
+                                }                                
+                            }else if(snippet.columnProjection[j][k].value == "/"){
+                                if(tmp1.type() == typeid(int&)){
+                                    tmpstack.push(any_cast<int>(tmp1) / any_cast<int>(tmp2));
+                                }else if(tmp1.type() == typeid(float&)){
+                                    tmpstack.push(any_cast<float>(tmp1) / any_cast<float>(tmp2));
+                                }else{
+                                    //string이 산술연산이 가능한가?   
+                                }                                
+                            }
+                        }else if(snippet.columnProjection[j][k].type == 3){
+                            //컬럼
+                            tmpstack.push(table[snippet.columnProjection[j][k].value]);
+                        }else{
+                            //벨류
+                            tmpstack.push(snippet.columnProjection[j][k].value);
+                        }
 
+                }
+                if(snippet.columnProjection[j][0].value == "1"){
+                    //sum
+                    if(groupbymap[key].count == 0){
+                        groupbymap[key].value.push_back(tmpstack.top());
+                        groupbymap[key].count++;
+                    }else{
+                        if(groupbymap[key].value[j].type() == typeid(int&)){
+                            groupbymap[key].value[j] = any_cast<int>(groupbymap[key].value[j]) + any_cast<int>(tmpstack.top());
+                        }else if(groupbymap[key].value[j].type() == typeid(float&)){
+                            groupbymap[key].value[j] = any_cast<float>(groupbymap[key].value[j]) + any_cast<float>(tmpstack.top());
+                        }
+                    }
+                }else if(snippet.columnProjection[j][0].value == "2"){
+                    //average
+                    if(groupbymap[key].count == 0){
+                        groupbymap[key].value.push_back(tmpstack.top());
+                        groupbymap[key].count++;
+                    }else{
+                        if(groupbymap[key].value[j].type() == typeid(int&)){
+                            groupbymap[key].value[j] = any_cast<int>(groupbymap[key].value[j]) + any_cast<int>(tmpstack.top());
+                        }else if(groupbymap[key].value[j].type() == typeid(float&)){
+                            groupbymap[key].value[j] = any_cast<float>(groupbymap[key].value[j]) + any_cast<float>(tmpstack.top());
+                        }
+                        groupbymap[key].count++;
+                    }
+                }
+            }
+        }
+    }
+    //여기서 average 계산 후 저장
+    for(int i = 0; i < groupbycount; i++){
+        vector<any> tmpvector;
+        for(auto j = groupbymap.begin(); j != groupbymap.end(); j++){
+            pair<string,groupby> tmppair = *j;
+            tmpvector.push_back(tmppair.second.value[i]);
+        }
+        table.insert(make_pair(snippet.column_alias[i],tmpvector));
+    }
+    buff.DeleteTableData(snippet.query_id,snippet.tablename[0]);
+    buff.SaveTableData(snippet.query_id,snippet.tableAlias,table);
 }
 
 void OrderBy(SnippetStruct snippet, BufferManager &buff){
