@@ -15,7 +15,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/root/demodir/TableManager.cc" "CMakeFiles/storage_engine_instance.dir/TableManager.cc.o" "gcc" "CMakeFiles/storage_engine_instance.dir/TableManager.cc.o.d"
   "/root/demodir/WalManager.cc" "CMakeFiles/storage_engine_instance.dir/WalManager.cc.o" "gcc" "CMakeFiles/storage_engine_instance.dir/WalManager.cc.o.d"
   "/root/demodir/buffer_manager.cc" "CMakeFiles/storage_engine_instance.dir/buffer_manager.cc.o" "gcc" "CMakeFiles/storage_engine_instance.dir/buffer_manager.cc.o.d"
-  "/root/demodir/mergequerykmc.cc" "CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o" "gcc" "CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o.d"
+  "/root/demodir/merge_query_manager.cc" "CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o" "gcc" "CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o.d"
   "/root/demodir/testmodule.cc" "CMakeFiles/storage_engine_instance.dir/testmodule.cc.o" "gcc" "CMakeFiles/storage_engine_instance.dir/testmodule.cc.o.d"
   )
 

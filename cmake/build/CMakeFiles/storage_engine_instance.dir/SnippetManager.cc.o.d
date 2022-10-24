@@ -1231,7 +1231,7 @@ CMakeFiles/storage_engine_instance.dir/SnippetManager.cc.o: \
  /usr/include/boost/asio/windows/stream_handle_service.hpp \
  /usr/include/boost/asio/write_at.hpp \
  /usr/include/boost/asio/impl/write_at.hpp /root/demodir/TableManager.h \
- /root/demodir/mergequerykmc.h /usr/include/c++/11/stack \
+ /root/demodir/merge_query_manager.h /usr/include/c++/11/stack \
  /usr/include/c++/11/bits/stl_stack.h /usr/include/c++/11/any \
  /usr/local/include/rapidjson/document.h \
  /usr/local/include/rapidjson/reader.h \

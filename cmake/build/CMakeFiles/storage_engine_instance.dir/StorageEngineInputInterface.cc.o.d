@@ -1451,7 +1451,7 @@ CMakeFiles/storage_engine_instance.dir/StorageEngineInputInterface.cc.o: \
  /usr/include/c++/11/bits/fstream.tcc \
  /usr/include/c++/11/condition_variable /usr/include/c++/11/any \
  /root/demodir/TableManager.h /root/demodir/SnippetManager.h \
- /root/demodir/mergequerykmc.h /usr/include/c++/11/stack \
+ /root/demodir/merge_query_manager.h /usr/include/c++/11/stack \
  /usr/include/c++/11/bits/stl_stack.h /root/demodir/testmodule.h \
  /root/demodir/WalManager.h /root/demodir/keti_util.h \
  /root/demodir/log_msg.h /usr/include/x86_64-linux-gnu/sys/ipc.h \

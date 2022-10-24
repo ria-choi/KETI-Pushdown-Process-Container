@@ -153,19 +153,19 @@ CMakeFiles/storage_engine_instance.dir/CSDManager.cc.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/storage_engine_instance.dir/CSDManager.cc.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/demodir/CSDManager.cc -o CMakeFiles/storage_engine_instance.dir/CSDManager.cc.s
 
-CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o: CMakeFiles/storage_engine_instance.dir/flags.make
-CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o: /root/demodir/mergequerykmc.cc
-CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o: CMakeFiles/storage_engine_instance.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/demodir/cmake/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o -MF CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o.d -o CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o -c /root/demodir/mergequerykmc.cc
+CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o: CMakeFiles/storage_engine_instance.dir/flags.make
+CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o: /root/demodir/merge_query_manager.cc
+CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o: CMakeFiles/storage_engine_instance.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/demodir/cmake/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o -MF CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o.d -o CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o -c /root/demodir/merge_query_manager.cc
 
-CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /root/demodir/mergequerykmc.cc > CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.i
+CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /root/demodir/merge_query_manager.cc > CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.i
 
-CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/demodir/mergequerykmc.cc -o CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.s
+CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/demodir/merge_query_manager.cc -o CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.s
 
 CMakeFiles/storage_engine_instance.dir/testmodule.cc.o: CMakeFiles/storage_engine_instance.dir/flags.make
 CMakeFiles/storage_engine_instance.dir/testmodule.cc.o: /root/demodir/testmodule.cc
@@ -203,7 +203,7 @@ storage_engine_instance_OBJECTS = \
 "CMakeFiles/storage_engine_instance.dir/buffer_manager.cc.o" \
 "CMakeFiles/storage_engine_instance.dir/CSDScheduler.cc.o" \
 "CMakeFiles/storage_engine_instance.dir/CSDManager.cc.o" \
-"CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o" \
+"CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o" \
 "CMakeFiles/storage_engine_instance.dir/testmodule.cc.o" \
 "CMakeFiles/storage_engine_instance.dir/WalManager.cc.o"
 
@@ -216,7 +216,7 @@ storage_engine_instance: CMakeFiles/storage_engine_instance.dir/TableManager.cc.
 storage_engine_instance: CMakeFiles/storage_engine_instance.dir/buffer_manager.cc.o
 storage_engine_instance: CMakeFiles/storage_engine_instance.dir/CSDScheduler.cc.o
 storage_engine_instance: CMakeFiles/storage_engine_instance.dir/CSDManager.cc.o
-storage_engine_instance: CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o
+storage_engine_instance: CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o
 storage_engine_instance: CMakeFiles/storage_engine_instance.dir/testmodule.cc.o
 storage_engine_instance: CMakeFiles/storage_engine_instance.dir/WalManager.cc.o
 storage_engine_instance: CMakeFiles/storage_engine_instance.dir/build.make

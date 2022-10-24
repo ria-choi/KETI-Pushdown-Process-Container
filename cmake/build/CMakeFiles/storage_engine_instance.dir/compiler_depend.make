@@ -1838,7 +1838,7 @@ CMakeFiles/storage_engine_instance.dir/SnippetManager.cc.o: /root/demodir/Snippe
   /usr/include/boost/asio/write_at.hpp \
   /usr/include/boost/asio/impl/write_at.hpp \
   /root/demodir/TableManager.h \
-  /root/demodir/mergequerykmc.h \
+  /root/demodir/merge_query_manager.h \
   /usr/include/c++/11/stack \
   /usr/include/c++/11/bits/stl_stack.h \
   /usr/include/c++/11/any \
@@ -5714,9 +5714,9 @@ CMakeFiles/storage_engine_instance.dir/buffer_manager.cc.o: /root/demodir/buffer
   /usr/include/x86_64-linux-gnu/bits/msq.h \
   /usr/include/c++/11/stdlib.h
 
-CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o: /root/demodir/mergequerykmc.cc \
+CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o: /root/demodir/merge_query_manager.cc \
   /usr/include/stdc-predef.h \
-  /root/demodir/mergequerykmc.h \
+  /root/demodir/merge_query_manager.h \
   /usr/include/c++/11/iostream \
   /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
   /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
@@ -7287,7 +7287,7 @@ CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o: /root/demodir/mergequ
 
 CMakeFiles/storage_engine_instance.dir/testmodule.cc.o: /root/demodir/testmodule.cc \
   /usr/include/stdc-predef.h \
-  /root/demodir/mergequerykmc.h \
+  /root/demodir/merge_query_manager.h \
   /usr/include/c++/11/iostream \
   /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
   /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
@@ -8638,37 +8638,39 @@ CMakeFiles/storage_engine_instance.dir/testmodule.cc.o: /root/demodir/testmodule
   /usr/include/boost/asio/windows/stream_handle_service.hpp \
   /usr/include/boost/asio/write_at.hpp \
   /usr/include/boost/asio/impl/write_at.hpp \
-  /usr/include/rapidjson/document.h \
-  /usr/include/rapidjson/reader.h \
-  /usr/include/rapidjson/allocators.h \
-  /usr/include/rapidjson/rapidjson.h \
+  /usr/local/include/rapidjson/document.h \
+  /usr/local/include/rapidjson/reader.h \
+  /usr/local/include/rapidjson/allocators.h \
+  /usr/local/include/rapidjson/rapidjson.h \
   /usr/include/inttypes.h \
-  /usr/include/rapidjson/stream.h \
-  /usr/include/rapidjson/encodings.h \
-  /usr/include/rapidjson/encodedstream.h \
-  /usr/include/rapidjson/memorystream.h \
-  /usr/include/rapidjson/internal/meta.h \
-  /usr/include/rapidjson/rapidjson.h \
-  /usr/include/rapidjson/internal/stack.h \
-  /usr/include/rapidjson/allocators.h \
-  /usr/include/rapidjson/internal/swap.h \
-  /usr/include/rapidjson/internal/strtod.h \
-  /usr/include/rapidjson/internal/ieee754.h \
-  /usr/include/rapidjson/internal/biginteger.h \
-  /usr/include/rapidjson/internal/diyfp.h \
-  /usr/include/rapidjson/internal/pow10.h \
-  /usr/include/rapidjson/error/error.h \
-  /usr/include/rapidjson/rapidjson.h \
-  /usr/include/rapidjson/internal/strfunc.h \
-  /usr/include/rapidjson/stream.h \
-  /usr/include/rapidjson/writer.h \
-  /usr/include/rapidjson/internal/dtoa.h \
-  /usr/include/rapidjson/internal/itoa.h \
-  /usr/include/rapidjson/internal/itoa.h \
-  /usr/include/rapidjson/stringbuffer.h \
-  /usr/include/rapidjson/stringbuffer.h \
-  /usr/include/rapidjson/prettywriter.h \
-  /usr/include/rapidjson/writer.h \
+  /usr/local/include/rapidjson/internal/meta.h \
+  /usr/local/include/rapidjson/rapidjson.h \
+  /usr/local/include/rapidjson/stream.h \
+  /usr/local/include/rapidjson/encodings.h \
+  /usr/local/include/rapidjson/encodedstream.h \
+  /usr/local/include/rapidjson/memorystream.h \
+  /usr/local/include/rapidjson/internal/clzll.h \
+  /usr/local/include/rapidjson/internal/stack.h \
+  /usr/local/include/rapidjson/allocators.h \
+  /usr/local/include/rapidjson/internal/swap.h \
+  /usr/local/include/rapidjson/internal/strtod.h \
+  /usr/local/include/rapidjson/internal/ieee754.h \
+  /usr/local/include/rapidjson/internal/biginteger.h \
+  /usr/local/include/rapidjson/internal/diyfp.h \
+  /usr/local/include/rapidjson/internal/clzll.h \
+  /usr/local/include/rapidjson/internal/pow10.h \
+  /usr/local/include/rapidjson/error/error.h \
+  /usr/local/include/rapidjson/rapidjson.h \
+  /usr/local/include/rapidjson/internal/strfunc.h \
+  /usr/local/include/rapidjson/stream.h \
+  /usr/local/include/rapidjson/writer.h \
+  /usr/local/include/rapidjson/internal/dtoa.h \
+  /usr/local/include/rapidjson/internal/itoa.h \
+  /usr/local/include/rapidjson/internal/itoa.h \
+  /usr/local/include/rapidjson/stringbuffer.h \
+  /usr/local/include/rapidjson/stringbuffer.h \
+  /usr/local/include/rapidjson/prettywriter.h \
+  /usr/local/include/rapidjson/writer.h \
   /root/demodir/buffer_manager.h \
   /usr/include/c++/11/thread \
   /usr/include/c++/11/bits/std_thread.h \
@@ -8694,7 +8696,7 @@ CMakeFiles/storage_engine_instance.dir/testmodule.cc.o: /root/demodir/testmodule
   /root/demodir/keti_type.h
 
 
-/root/demodir/mergequerykmc.cc:
+/root/demodir/merge_query_manager.cc:
 
 /usr/include/cpprest/oauth1.h:
 
@@ -8977,6 +8979,8 @@ CMakeFiles/storage_engine_instance.dir/testmodule.cc.o: /root/demodir/testmodule
 /usr/include/rapidjson/document.h:
 
 /root/demodir/TableManager.cc:
+
+/root/demodir/mergequerykmc.h:
 
 /include/google/protobuf/io/zero_copy_stream_impl.h:
 
@@ -9282,7 +9286,7 @@ snippet_sample.grpc.pb.h:
 
 /usr/include/c++/11/stack:
 
-/root/demodir/mergequerykmc.h:
+/root/demodir/merge_query_manager.h:
 
 /usr/include/boost/asio/write_at.hpp:
 

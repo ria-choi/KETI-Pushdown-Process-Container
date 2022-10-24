@@ -310,29 +310,29 @@ buffer_manager.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/storage_engine_instance.dir/build.make CMakeFiles/storage_engine_instance.dir/buffer_manager.cc.s
 .PHONY : buffer_manager.cc.s
 
-mergequerykmc.o: mergequerykmc.cc.o
-.PHONY : mergequerykmc.o
+merge_query_manager.o: merge_query_manager.cc.o
+.PHONY : merge_query_manager.o
 
 # target to build an object file
-mergequerykmc.cc.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/storage_engine_instance.dir/build.make CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.o
-.PHONY : mergequerykmc.cc.o
+merge_query_manager.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/storage_engine_instance.dir/build.make CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.o
+.PHONY : merge_query_manager.cc.o
 
-mergequerykmc.i: mergequerykmc.cc.i
-.PHONY : mergequerykmc.i
+merge_query_manager.i: merge_query_manager.cc.i
+.PHONY : merge_query_manager.i
 
 # target to preprocess a source file
-mergequerykmc.cc.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/storage_engine_instance.dir/build.make CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.i
-.PHONY : mergequerykmc.cc.i
+merge_query_manager.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/storage_engine_instance.dir/build.make CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.i
+.PHONY : merge_query_manager.cc.i
 
-mergequerykmc.s: mergequerykmc.cc.s
-.PHONY : mergequerykmc.s
+merge_query_manager.s: merge_query_manager.cc.s
+.PHONY : merge_query_manager.s
 
 # target to generate assembly for a file
-mergequerykmc.cc.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/storage_engine_instance.dir/build.make CMakeFiles/storage_engine_instance.dir/mergequerykmc.cc.s
-.PHONY : mergequerykmc.cc.s
+merge_query_manager.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/storage_engine_instance.dir/build.make CMakeFiles/storage_engine_instance.dir/merge_query_manager.cc.s
+.PHONY : merge_query_manager.cc.s
 
 snippet_sample.grpc.pb.o: snippet_sample.grpc.pb.cc.o
 .PHONY : snippet_sample.grpc.pb.o
@@ -437,9 +437,9 @@ help:
 	@echo "... buffer_manager.o"
 	@echo "... buffer_manager.i"
 	@echo "... buffer_manager.s"
-	@echo "... mergequerykmc.o"
-	@echo "... mergequerykmc.i"
-	@echo "... mergequerykmc.s"
+	@echo "... merge_query_manager.o"
+	@echo "... merge_query_manager.i"
+	@echo "... merge_query_manager.s"
 	@echo "... snippet_sample.grpc.pb.o"
 	@echo "... snippet_sample.grpc.pb.i"
 	@echo "... snippet_sample.grpc.pb.s"
