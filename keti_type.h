@@ -18,12 +18,13 @@ typedef enum work_type{
 
 typedef enum opertype
 {
-    KETI_GE = 0,  // >=
+    KETI_DEFAULT = 0,
+    KETI_GE,      // >=
     KETI_LE,      // <=
     KETI_GT,      // >
     KETI_LT,      // <
     KETI_ET,      // ==
-    KETI_NE,      // !=
+    KETI_NE,      // !=, <>
     KETI_LIKE,    // RV로 스트링
     KETI_BETWEEN, // RV로 배열형식 [10,20] OR [COL1,20] --> extra
     KETI_IN,      // RV로 배열형식 [10,20,30,40] + 크기 --> extra
@@ -33,12 +34,12 @@ typedef enum opertype
     KETI_AND,     // AND --> 혼자 들어오는 oper
     KETI_OR,      // OR --> 혼자 들어오는 oper
     KETI_JOIN,    // 타입 나눠야함 left, right, inner, outer
-	KETI_DEFAULT = 15,
-    KETI_UNION = 100,
-    KETI_UNIONALL = 101,
-    KETI_INTERSECT = 102, //MySQL 미지원
-    KETI_MINUS = 103, //MySQL 미지원
-    KETI_PLUS = 104  //MySQL 미지원
+    KETI_SUBSTRING,
+    KETI_SET_UNION = 100,
+    KETI_SET_UNIONALL = 101,
+    KETI_SET_INTERSECT = 102, //MySQL 미지원
+    KETI_SET_MINUS = 103, //MySQL 미지원
+    KETI_SET_PLUS = 104  //MySQL 미지원
 }KETI_OPER_TYPE;
 
 typedef enum ParseType{
@@ -78,7 +79,7 @@ typedef enum MySQL_DataType{
 }MySQL_DataType;
 
 typedef enum KETI_Type{
-    KETI_INT8,
+    KETI_INT8 = 0,
     KETI_INT16,
     KETI_INT32,
     KETI_INT64,
@@ -88,6 +89,11 @@ typedef enum KETI_Type{
     KETI_DATE,
     KETI_TIMESTAMP,
     KETI_STRING,
+    KETI_COLUMN,
+    KETI_PLUS = 100,
+    KETI_MINUS,
+    KETI_MULTIPLE,
+    KETI_DIVIDE,
 }KETI_Type;
 
 typedef enum Work_Status_Type{
@@ -114,7 +120,7 @@ typedef enum Aggregation_Type{
     KETI_WHEN,
     KETI_THEN,
     KETI_ELSE,
-    KETI_LIKE,
+    KETI_LIKE_SELECT,
 }KETI_Aggregation_Type;
 
 typedef enum Projection_Type{
@@ -124,5 +130,19 @@ typedef enum Projection_Type{
     PROJECTION_COL,
     PROJECTION_OPER,
 }KETI_Projection_Type;
+
+
+typedef enum Snippet_Type{
+    BASIC_SNIPPET = 0,
+    AGGREGATION_SNIPPET,
+    JOIN_SNIPPET,
+    SUBQUERY_SNIPPET,
+    DEPENDENCY_EXIST_SNIPPET,
+    DEPENDENCY_NOT_EXIST_SNIPPET,
+    DEPENDENCY_OPER_SNIPPET,
+    DEPENDENCY_IN_SNIPPET,
+    HAVING_SNIPPET,
+    LEFT_OUT_JOIN_SNIPPET,
+}KETI_Snippet_Type;
 
 #endif

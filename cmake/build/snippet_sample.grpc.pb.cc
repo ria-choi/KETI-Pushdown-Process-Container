@@ -37,20 +37,20 @@ SnippetSample::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& chan
   , rpcmethod_Run_(SnippetSample_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
-::grpc::ClientReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>* SnippetSample::Stub::SetSnippetRaw(::grpc::ClientContext* context) {
-  return ::grpc::internal::ClientReaderWriterFactory< ::snippetsample::Snippet, ::google::protobuf::Empty>::Create(channel_.get(), rpcmethod_SetSnippet_, context);
+::grpc::ClientReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>* SnippetSample::Stub::SetSnippetRaw(::grpc::ClientContext* context) {
+  return ::grpc::internal::ClientReaderWriterFactory< ::snippetsample::SnippetRequest, ::snippetsample::Result>::Create(channel_.get(), rpcmethod_SetSnippet_, context);
 }
 
-void SnippetSample::Stub::async::SetSnippet(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::snippetsample::Snippet,::google::protobuf::Empty>* reactor) {
-  ::grpc::internal::ClientCallbackReaderWriterFactory< ::snippetsample::Snippet,::google::protobuf::Empty>::Create(stub_->channel_.get(), stub_->rpcmethod_SetSnippet_, context, reactor);
+void SnippetSample::Stub::async::SetSnippet(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::snippetsample::SnippetRequest,::snippetsample::Result>* reactor) {
+  ::grpc::internal::ClientCallbackReaderWriterFactory< ::snippetsample::SnippetRequest,::snippetsample::Result>::Create(stub_->channel_.get(), stub_->rpcmethod_SetSnippet_, context, reactor);
 }
 
-::grpc::ClientAsyncReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>* SnippetSample::Stub::AsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::snippetsample::Snippet, ::google::protobuf::Empty>::Create(channel_.get(), cq, rpcmethod_SetSnippet_, context, true, tag);
+::grpc::ClientAsyncReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>* SnippetSample::Stub::AsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::snippetsample::SnippetRequest, ::snippetsample::Result>::Create(channel_.get(), cq, rpcmethod_SetSnippet_, context, true, tag);
 }
 
-::grpc::ClientAsyncReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>* SnippetSample::Stub::PrepareAsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::snippetsample::Snippet, ::google::protobuf::Empty>::Create(channel_.get(), cq, rpcmethod_SetSnippet_, context, false, nullptr);
+::grpc::ClientAsyncReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>* SnippetSample::Stub::PrepareAsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::snippetsample::SnippetRequest, ::snippetsample::Result>::Create(channel_.get(), cq, rpcmethod_SetSnippet_, context, false, nullptr);
 }
 
 ::grpc::Status SnippetSample::Stub::Run(::grpc::ClientContext* context, const ::snippetsample::Request& request, ::snippetsample::Result* response) {
@@ -80,11 +80,11 @@ SnippetSample::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       SnippetSample_method_names[0],
       ::grpc::internal::RpcMethod::BIDI_STREAMING,
-      new ::grpc::internal::BidiStreamingHandler< SnippetSample::Service, ::snippetsample::Snippet, ::google::protobuf::Empty>(
+      new ::grpc::internal::BidiStreamingHandler< SnippetSample::Service, ::snippetsample::SnippetRequest, ::snippetsample::Result>(
           [](SnippetSample::Service* service,
              ::grpc::ServerContext* ctx,
-             ::grpc::ServerReaderWriter<::google::protobuf::Empty,
-             ::snippetsample::Snippet>* stream) {
+             ::grpc::ServerReaderWriter<::snippetsample::Result,
+             ::snippetsample::SnippetRequest>* stream) {
                return service->SetSnippet(ctx, stream);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
@@ -102,7 +102,7 @@ SnippetSample::Service::Service() {
 SnippetSample::Service::~Service() {
 }
 
-::grpc::Status SnippetSample::Service::SetSnippet(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::google::protobuf::Empty, ::snippetsample::Snippet>* stream) {
+::grpc::Status SnippetSample::Service::SetSnippet(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::snippetsample::Result, ::snippetsample::SnippetRequest>* stream) {
   (void) context;
   (void) stream;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");

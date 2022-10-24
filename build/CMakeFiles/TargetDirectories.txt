@@ -1,0 +1,4 @@
+/root/workspace/test/ODBC-Pushdown-Process-Container_40k/build/CMakeFiles/ss_grpc_proto.dir
+/root/workspace/test/ODBC-Pushdown-Process-Container_40k/build/CMakeFiles/storage_engine_instance.dir
+/root/workspace/test/ODBC-Pushdown-Process-Container_40k/build/CMakeFiles/edit_cache.dir
+/root/workspace/test/ODBC-Pushdown-Process-Container_40k/build/CMakeFiles/rebuild_cache.dir

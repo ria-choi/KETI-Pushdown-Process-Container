@@ -1,11 +1,14 @@
 #include "ColumnEncoding.h"
+#include "keti_util.h"
 
 void ColumnEncoding::init_data(){
-    printf("Call Column Encoding::init_data method...\n");
+    keti_log("Column Encoding","init_data method...");
+    //printf("Call Column Encoding::init_data method...\n");
 }
 
 void ColumnEncoding::Encode(){
-    printf("Call Column Encoding::Encode method...\n");
+    keti_log("Column Encoding","Encode method...");
+    //printf("Call Column Encoding::Encode method...\n");
 }
 
 int8_t KETI_INT8_TO_MySQL_INT8(string data){

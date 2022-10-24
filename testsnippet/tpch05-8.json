@@ -1,0 +1,63 @@
+{
+    "type" : 2,
+    "snippet":
+    {
+      "queryID " :4,
+      "workID":8,
+      "tableName": ["snippet4-7", "snippet4-4"],
+      "tableCol":[
+          "n_nationkey",
+          "n_name",
+          "s_suppkey",
+          "s_nationkey"
+        ],
+      "tableFilter":[
+        {
+          "LV": {
+              "type": [10],
+              "value": ["s_nationkey"]
+          },
+          "Operator" : 4, 
+          "RV" : {
+              "type": [10],
+              "value": ["n_nationkey"]
+          }
+        }      
+      ],
+      "tableOffset":[],
+      "tableOfflen":[],
+      "tableDatatype":[],
+      "blockList":[null],
+      "tableAlias": "snippet4-8",
+      "columnAlias": [
+          "n_name",
+          "s_suppkey",
+          "s_nationkey"
+        ],
+      "columnProjection": [
+        {
+          "selectType": 0,
+          "value": ["n_name"],
+          "valueType": [10]
+        },
+        {
+          "selectType": 0,
+          "value": ["s_suppkey"],
+          "valueType": [10]
+        },
+        {
+          "selectType": 0,
+          "value": ["s_nationkey"],
+          "valueType": [10]
+        }
+      ],
+      "columnFiltering": [
+          "n_name",
+          "s_suppkey",
+          "s_nationkey"
+        ],
+      "groupBy": [null],
+      "orderBy": [null]
+    }
+
+}

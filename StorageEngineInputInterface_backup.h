@@ -27,7 +27,7 @@
 #include "keti_type.h"
 #include "buffer_manager.h"
 // #include "TableAccess.h"
-#include "QueryExecutor.h"
+// #include "QueryExecutor.h"
 typedef unsigned char uchar;
 
 

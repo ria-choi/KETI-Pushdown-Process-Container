@@ -35,14 +35,14 @@ class SnippetSample final {
   class StubInterface {
    public:
     virtual ~StubInterface() {}
-    std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::snippetsample::Snippet, ::google::protobuf::Empty>> SetSnippet(::grpc::ClientContext* context) {
-      return std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::snippetsample::Snippet, ::google::protobuf::Empty>>(SetSnippetRaw(context));
+    std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::snippetsample::SnippetRequest, ::snippetsample::Result>> SetSnippet(::grpc::ClientContext* context) {
+      return std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::snippetsample::SnippetRequest, ::snippetsample::Result>>(SetSnippetRaw(context));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::Snippet, ::google::protobuf::Empty>> AsyncSetSnippet(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::Snippet, ::google::protobuf::Empty>>(AsyncSetSnippetRaw(context, cq, tag));
+    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::SnippetRequest, ::snippetsample::Result>> AsyncSetSnippet(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::SnippetRequest, ::snippetsample::Result>>(AsyncSetSnippetRaw(context, cq, tag));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::Snippet, ::google::protobuf::Empty>> PrepareAsyncSetSnippet(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::Snippet, ::google::protobuf::Empty>>(PrepareAsyncSetSnippetRaw(context, cq));
+    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::SnippetRequest, ::snippetsample::Result>> PrepareAsyncSetSnippet(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::SnippetRequest, ::snippetsample::Result>>(PrepareAsyncSetSnippetRaw(context, cq));
     }
     virtual ::grpc::Status Run(::grpc::ClientContext* context, const ::snippetsample::Request& request, ::snippetsample::Result* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::snippetsample::Result>> AsyncRun(::grpc::ClientContext* context, const ::snippetsample::Request& request, ::grpc::CompletionQueue* cq) {
@@ -54,7 +54,7 @@ class SnippetSample final {
     class async_interface {
      public:
       virtual ~async_interface() {}
-      virtual void SetSnippet(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::snippetsample::Snippet,::google::protobuf::Empty>* reactor) = 0;
+      virtual void SetSnippet(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::snippetsample::SnippetRequest,::snippetsample::Result>* reactor) = 0;
       virtual void Run(::grpc::ClientContext* context, const ::snippetsample::Request* request, ::snippetsample::Result* response, std::function<void(::grpc::Status)>) = 0;
       virtual void Run(::grpc::ClientContext* context, const ::snippetsample::Request* request, ::snippetsample::Result* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
@@ -62,23 +62,23 @@ class SnippetSample final {
     virtual class async_interface* async() { return nullptr; }
     class async_interface* experimental_async() { return async(); }
    private:
-    virtual ::grpc::ClientReaderWriterInterface< ::snippetsample::Snippet, ::google::protobuf::Empty>* SetSnippetRaw(::grpc::ClientContext* context) = 0;
-    virtual ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::Snippet, ::google::protobuf::Empty>* AsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) = 0;
-    virtual ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::Snippet, ::google::protobuf::Empty>* PrepareAsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientReaderWriterInterface< ::snippetsample::SnippetRequest, ::snippetsample::Result>* SetSnippetRaw(::grpc::ClientContext* context) = 0;
+    virtual ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::SnippetRequest, ::snippetsample::Result>* AsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) = 0;
+    virtual ::grpc::ClientAsyncReaderWriterInterface< ::snippetsample::SnippetRequest, ::snippetsample::Result>* PrepareAsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::snippetsample::Result>* AsyncRunRaw(::grpc::ClientContext* context, const ::snippetsample::Request& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::snippetsample::Result>* PrepareAsyncRunRaw(::grpc::ClientContext* context, const ::snippetsample::Request& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
     Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
-    std::unique_ptr< ::grpc::ClientReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>> SetSnippet(::grpc::ClientContext* context) {
-      return std::unique_ptr< ::grpc::ClientReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>>(SetSnippetRaw(context));
+    std::unique_ptr< ::grpc::ClientReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>> SetSnippet(::grpc::ClientContext* context) {
+      return std::unique_ptr< ::grpc::ClientReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>>(SetSnippetRaw(context));
     }
-    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>> AsyncSetSnippet(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>>(AsyncSetSnippetRaw(context, cq, tag));
+    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>> AsyncSetSnippet(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>>(AsyncSetSnippetRaw(context, cq, tag));
     }
-    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>> PrepareAsyncSetSnippet(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>>(PrepareAsyncSetSnippetRaw(context, cq));
+    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>> PrepareAsyncSetSnippet(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>>(PrepareAsyncSetSnippetRaw(context, cq));
     }
     ::grpc::Status Run(::grpc::ClientContext* context, const ::snippetsample::Request& request, ::snippetsample::Result* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::snippetsample::Result>> AsyncRun(::grpc::ClientContext* context, const ::snippetsample::Request& request, ::grpc::CompletionQueue* cq) {
@@ -90,7 +90,7 @@ class SnippetSample final {
     class async final :
       public StubInterface::async_interface {
      public:
-      void SetSnippet(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::snippetsample::Snippet,::google::protobuf::Empty>* reactor) override;
+      void SetSnippet(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::snippetsample::SnippetRequest,::snippetsample::Result>* reactor) override;
       void Run(::grpc::ClientContext* context, const ::snippetsample::Request* request, ::snippetsample::Result* response, std::function<void(::grpc::Status)>) override;
       void Run(::grpc::ClientContext* context, const ::snippetsample::Request* request, ::snippetsample::Result* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
@@ -104,9 +104,9 @@ class SnippetSample final {
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
     class async async_stub_{this};
-    ::grpc::ClientReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>* SetSnippetRaw(::grpc::ClientContext* context) override;
-    ::grpc::ClientAsyncReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>* AsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) override;
-    ::grpc::ClientAsyncReaderWriter< ::snippetsample::Snippet, ::google::protobuf::Empty>* PrepareAsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>* SetSnippetRaw(::grpc::ClientContext* context) override;
+    ::grpc::ClientAsyncReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>* AsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) override;
+    ::grpc::ClientAsyncReaderWriter< ::snippetsample::SnippetRequest, ::snippetsample::Result>* PrepareAsyncSetSnippetRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::snippetsample::Result>* AsyncRunRaw(::grpc::ClientContext* context, const ::snippetsample::Request& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::snippetsample::Result>* PrepareAsyncRunRaw(::grpc::ClientContext* context, const ::snippetsample::Request& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_SetSnippet_;
@@ -118,7 +118,7 @@ class SnippetSample final {
    public:
     Service();
     virtual ~Service();
-    virtual ::grpc::Status SetSnippet(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::google::protobuf::Empty, ::snippetsample::Snippet>* stream);
+    virtual ::grpc::Status SetSnippet(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::snippetsample::Result, ::snippetsample::SnippetRequest>* stream);
     virtual ::grpc::Status Run(::grpc::ServerContext* context, const ::snippetsample::Request* request, ::snippetsample::Result* response);
   };
   template <class BaseClass>
@@ -133,11 +133,11 @@ class SnippetSample final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status SetSnippet(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::google::protobuf::Empty, ::snippetsample::Snippet>* /*stream*/)  override {
+    ::grpc::Status SetSnippet(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::snippetsample::Result, ::snippetsample::SnippetRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestSetSnippet(::grpc::ServerContext* context, ::grpc::ServerAsyncReaderWriter< ::google::protobuf::Empty, ::snippetsample::Snippet>* stream, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestSetSnippet(::grpc::ServerContext* context, ::grpc::ServerAsyncReaderWriter< ::snippetsample::Result, ::snippetsample::SnippetRequest>* stream, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncBidiStreaming(0, context, stream, new_call_cq, notification_cq, tag);
     }
   };
@@ -169,7 +169,7 @@ class SnippetSample final {
    public:
     WithCallbackMethod_SetSnippet() {
       ::grpc::Service::MarkMethodCallback(0,
-          new ::grpc::internal::CallbackBidiHandler< ::snippetsample::Snippet, ::google::protobuf::Empty>(
+          new ::grpc::internal::CallbackBidiHandler< ::snippetsample::SnippetRequest, ::snippetsample::Result>(
             [this](
                    ::grpc::CallbackServerContext* context) { return this->SetSnippet(context); }));
     }
@@ -177,11 +177,11 @@ class SnippetSample final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status SetSnippet(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::google::protobuf::Empty, ::snippetsample::Snippet>* /*stream*/)  override {
+    ::grpc::Status SetSnippet(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::snippetsample::Result, ::snippetsample::SnippetRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerBidiReactor< ::snippetsample::Snippet, ::google::protobuf::Empty>* SetSnippet(
+    virtual ::grpc::ServerBidiReactor< ::snippetsample::SnippetRequest, ::snippetsample::Result>* SetSnippet(
       ::grpc::CallbackServerContext* /*context*/)
       { return nullptr; }
   };
@@ -226,7 +226,7 @@ class SnippetSample final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status SetSnippet(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::google::protobuf::Empty, ::snippetsample::Snippet>* /*stream*/)  override {
+    ::grpc::Status SetSnippet(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::snippetsample::Result, ::snippetsample::SnippetRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -260,7 +260,7 @@ class SnippetSample final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status SetSnippet(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::google::protobuf::Empty, ::snippetsample::Snippet>* /*stream*/)  override {
+    ::grpc::Status SetSnippet(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::snippetsample::Result, ::snippetsample::SnippetRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -303,7 +303,7 @@ class SnippetSample final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status SetSnippet(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::google::protobuf::Empty, ::snippetsample::Snippet>* /*stream*/)  override {
+    ::grpc::Status SetSnippet(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::snippetsample::Result, ::snippetsample::SnippetRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }

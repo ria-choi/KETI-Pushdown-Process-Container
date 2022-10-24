@@ -1,0 +1,56 @@
+{
+    "type" : 2,
+    "snippet":
+    {
+      "queryID " :4,
+      "workID":7,
+      "tableName": ["snippet4-6", "snippet4-5"],
+      "tableCol":[
+          "r_regionkey", 
+          "n_nationkey",
+          "n_name",
+          "n_regionkey"
+        ],
+      "tableFilter":[
+        {
+          "LV": {
+              "type": [10],
+              "value": ["n_regionkey"]
+          },
+          "Operator" : 4, 
+          "RV" : {
+              "type": [10],
+              "value": ["r_regionkey"]
+          }
+        }   
+      ],
+      "tableOffset":[],
+      "tableOfflen":[],
+      "tableDatatype":[],
+      "blockList":[null],
+      "tableAlias": "snippet4-7",
+      "columnAlias": [
+          "n_nationkey",
+          "n_name"
+      ],
+      "columnProjection": [
+        {
+          "selectType": 0,
+          "value": ["r_regionkey"],
+          "valueType": [10]
+        },
+        {
+          "selectType": 0,
+          "value": ["n_name"],
+          "valueType": [10]
+        }
+      ],
+      "columnFiltering": [
+          "n_nationkey",
+          "n_name"
+      ],
+      "groupBy": [null],
+      "orderBy": [null]
+    }
+
+}

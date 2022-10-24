@@ -1,4 +1,5 @@
 #include "buffer_manager_save.h"
+#include "keti_util.h"
 
 void sumtest::sum1(Block_Buffer bbuf){
     char testbuf[7];
@@ -219,15 +220,16 @@ void BufferManager::MergeBlock(BlockResult result, Scheduler &scheduler, TableMa
                 if(*iter2 < result.last_valid_block_id){
                     myWorkBuffer->need_block_list.erase(*iter2);
                 }else{
-                    cout << "-------*iter2 > result.last_valid_block_id-----------" << endl;
+                    keti_log("BufferManager", "-------*iter2 > result.last_valid_block_id-----------");
+                    //cout << "-------*iter2 > result.last_valid_block_id-----------" << endl;
                 }
             }
         }
         // cout << endl;
         // cout << "size: " << myWorkBuffer->need_block_list.size() << endl;
     }
-
-    cout << "(total/result/total-result)" << "(" << myWorkBuffer->left_block_count <<"/" << result.result_block_count << "/" << myWorkBuffer->left_block_count-result.result_block_count << ")" << endl;
+    keti_log("BufferManager", "(total/result/total-result)(" + std::to_string(myWorkBuffer->left_block_count) + "/" + std::to_string(result.result_block_count) + "/" + std::to_string(myWorkBuffer->left_block_count-result.result_block_count) + ")" );
+    //cout << "(total/result/total-result)" << "(" << myWorkBuffer->left_block_count <<"/" << result.result_block_count << "/" << myWorkBuffer->left_block_count-result.result_block_count << ")" << endl;
     
     scheduler.csdworkdec(result.csd_name, result.result_block_count);
     myWorkBuffer->left_block_count -= result.result_block_count;
@@ -285,8 +287,9 @@ void BufferManager::MergeBlock(BlockResult result, Scheduler &scheduler, TableMa
                         }
                         int my_value = *((int *)tempbuf_);
                         m_BufferManager[q]->int_col_map[my_col].insert(my_value);
-                    }else{ 
-                        cout << "[Buff_M] New Type!!!! - " << col_type << endl;
+                    }else{
+                        keti_log("BufferManager", "[Buff_M] New Type!!!! - " + std::to_string(col_type)); 
+                        //cout << "[Buff_M] New Type!!!! - " << col_type << endl;
                     }
         
                 }   
@@ -368,7 +371,8 @@ void BufferManager::MergeBlock(BlockResult result, Scheduler &scheduler, TableMa
                             break;
                         }
                     }else{ 
-                        cout << "[Buff_M] New Type!!!! - " << col_type << endl;
+                        keti_log("BufferManager", "[Buff_M] New Type!!!! - " + std::to_string(col_type)); 
+                        //cout << "[Buff_M] New Type!!!! - " << col_type << endl;
                     }
                 }   
 
@@ -445,7 +449,8 @@ void BufferManager::MergeBlock(BlockResult result, Scheduler &scheduler, TableMa
                             break;
                         }
                     }else{ 
-                        cout << "[Buff_M] New Type!!!! - " << col_type << endl;
+                        keti_log("BufferManager", "[Buff_M] New Type!!!! - " + std::to_string(col_type)); 
+                        //cout << "[Buff_M] New Type!!!! - " << col_type << endl;
                     }
                 }   
 
@@ -493,7 +498,8 @@ void BufferManager::MergeBlock(BlockResult result, Scheduler &scheduler, TableMa
                         int64_t my_value = *((int64_t *)tempbuf_);
                         m_BufferManager[q]->int64_col_map[my_col].insert(my_value);
                     }else{ 
-                        cout << "[Buff_M] New Type!!!! - " << col_type << endl;
+                        keti_log("BufferManager", "[Buff_M] New Type!!!! - " + std::to_string(col_type)); 
+                        //cout << "[Buff_M] New Type!!!! - " << col_type << endl;
                     }
         
                 }   
@@ -509,7 +515,8 @@ void BufferManager::MergeBlock(BlockResult result, Scheduler &scheduler, TableMa
 
     //필요한 블록이 다 모였는지 확인
     if((myWorkBuffer->need_block_list.size() == 0) || (myWorkBuffer->block_cnt == 0)){
-        cout << "FINISHED " << (myWorkBuffer->need_block_list.size() == 0) << "/" << (myWorkBuffer->block_cnt == 0) << endl;
+        keti_log("BufferManager", "FINISHED " + std::to_string((myWorkBuffer->need_block_list.size() == 0)) + "/" + std::to_string((myWorkBuffer->block_cnt == 0))); 
+        //cout << "FINISHED " << (myWorkBuffer->need_block_list.size() == 0) << "/" << (myWorkBuffer->block_cnt == 0) << endl;
         
         myWorkBuffer->merging_block_buffer.last_merging_buffer = true;
         myWorkBuffer->is_done = true;  
@@ -517,8 +524,8 @@ void BufferManager::MergeBlock(BlockResult result, Scheduler &scheduler, TableMa
         if(myWorkBuffer->work_type == 2 || myWorkBuffer->work_type == 3){
             myWorkBuffer->PushWork();
         }
-            
-        cout << "Work [" << myWorkBuffer->work_id << "] Done!!" << endl;               
+        keti_log("BufferManager", "Work [" + std::to_string(myWorkBuffer->work_id) + "] Done!!");    
+        //cout << "Work [" << myWorkBuffer->work_id << "] Done!!" << endl;               
     }
 
 }
@@ -563,7 +570,8 @@ int BufferManager::GetData(Block_Buffer &dest){//최종 query buffer의 결과�
         return -1;
     }else if(m_BufferManager[dest.query_id]->is_done &&
         m_BufferManager[dest.query_id]->return_block_queue.is_empty()){
-        cout << "Query ID ["<< dest.query_id << "] is done! (no data to return)" << endl;
+        keti_log("BufferManager", "Query ID [" + std::to_string(dest.query_id) + "] is done! (no data to return)");    
+        //cout << "Query ID ["<< dest.query_id << "] is done! (no data to return)" << endl;
         return -2;
     }
     else{
@@ -613,7 +621,8 @@ int BufferManager::GetData(Block_Buffer &dest){//최종 query buffer의 결과�
 
 int BufferManager::SetWork(int qid, int sid, int wid, vector<int> block_list, 
                 string table_name_, vector<tuple<string,string,string>> join_){//wid의 block list
-    cout << "#Set Work! [" << qid << "-" << sid << "-" << wid << "]" << endl;
+    keti_log("BufferManager", "#Set Work! [" + std::to_string(qid) + "-" + std::to_string(sid) + "-" + std::to_string(wid) + "]");    
+    //cout << "#Set Work! [" << qid << "-" << sid << "-" << wid << "]" << endl;
    
     if(m_BufferManager.find(qid) == m_BufferManager.end()){
         cout << "<error> No Query ID, Init Query first! " << endl;

@@ -121,6 +121,7 @@ int TableManager::generate_req_json(std::string tablename,std::string &dst){
 	//std::cout << strbuf.GetString() << std::endl;	
 	//strcpy(dst,strbuf.GetString());
 	dst = std::string(strbuf.GetString());
+	// cout << dst << endl;
 	return 0;
 }
 
@@ -151,6 +152,14 @@ void TableManager::print_TableManager(){
 	}
 }
 
+vector<string> TableManager::get_sstlist(string tablename){
+	vector<string> sstlist;
+	for(int i = 0; i < m_TableManager[tablename].SSTList.size(); i++){
+		sstlist.push_back(m_TableManager[tablename].SSTList[i].filename);
+	}
+	return sstlist;
+}
+
 int TableManager::init_TableManager(){
 	//read TableManager.json
 	int json_fd;
@@ -158,59 +167,71 @@ int TableManager::init_TableManager(){
 	char buf;
 		
 	//memset(json,0,sizeof(json));
-	json_fd = open("TableManager.json",O_RDONLY);
-	
+	// json_fd = open("TableManager.json",O_RDONLY);
+	// json_fd = open("NewTableManager.json",O_RDONLY);
+	if ((json_fd = open("../../NewTableManager.json", O_RDONLY)) < 0) {
+        fprintf(stderr, "open error for %s\n", "NewTableManager.json");
+        exit(1);
+    }
 	int i=0;
 	int res;
 
 	
 	while(1){
-		res = read(json_fd,&buf,1);
-		if(res == 0){
-			break;
-		}
-		json += buf;
+		// cout << 1;
+		// res = read(json_fd,&buf,1);
+		// if(res == 0){
+		// 	break;
+		// }
+		// json += buf;
+		if (read(json_fd, &buf, 1) > 0)
+            json += buf;
+        else
+            break;
 	}
 	close(json_fd);
 	
 	// debug code check read json
 	// std::cout << "json : " << json << std::endl;
-
+	// cout << 1 << endl;
 	//parse json	
 	Document document;
 	document.Parse(json.c_str());
 
 	Value &TableList = document["Table List"];
+	// cout << 2 << endl;
 	
 	for(i=0;i<TableList.Size();i++){
+		// cout << i << endl;
 		Value &TableObject = TableList[i];
 		struct Table tbl;
 
 		Value &tablenameObject = TableObject["tablename"];
 		tbl.tablename = tablenameObject.GetString();
 
-		tbl.tablesize = TableObject["Size"].GetInt();
+		// tbl.tablesize = TableObject["Size"].GetInt();
 
-		if(TableObject.HasMember("PK")){
-			for(int i = 0; i < TableObject["PK"].Size(); i++){
-				tbl.PK.push_back(TableObject["PK"][i].GetString());
-			}
-		}
-		if(TableObject.HasMember("Index")){
-			for(int i = 0; i < TableObject["Index"].Size(); i++){
-				vector<string> index;
-				for(int j = 0; j < TableObject["Index"][i].Size(); j++){
-					index.push_back(TableObject["Index"][i][j].GetString());
-				}
-				tbl.IndexList.push_back(index);
-			}
-		}
+		// if(TableObject.HasMember("PK")){
+		// 	for(int i = 0; i < TableObject["PK"].Size(); i++){
+		// 		tbl.PK.push_back(TableObject["PK"][i].GetString());
+		// 	}
+		// }
+		// if(TableObject.HasMember("Index")){
+		// 	for(int i = 0; i < TableObject["Index"].Size(); i++){
+		// 		vector<string> index;
+		// 		for(int j = 0; j < TableObject["Index"][i].Size(); j++){
+		// 			index.push_back(TableObject["Index"][i][j].GetString());
+		// 		}
+		// 		tbl.IndexList.push_back(index);
+		// 	}
+		// }
 		// debug code check filename
 		//std::cout << "tablename : " << tbl.tablename << std::endl;
 		
 		Value &SchemaObject = TableObject["Schema"];
 		int j;
 		for(j=0;j<SchemaObject.Size();j++){
+			// cout << i << " " << j << endl;
 			Value &ColumnObject = SchemaObject[j];
 			struct ColumnSchema Column;
 

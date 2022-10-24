@@ -1,3 +1,4 @@
+#pragma once
 #include <vector>
 #include <unordered_map>
 #include <fcntl.h>
@@ -22,14 +23,16 @@
 #include <unordered_set>
 #include <map>
 #include <any>
+#include <bitset>
 
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/prettywriter.h" 
 
+#include "CSDScheduler.h"
 #include "TableManager.h"
-#include "QueryExecutor.h"
+#include "CSDManager.h"
 #include "keti_type.h"
 
 using namespace std;
@@ -45,102 +48,6 @@ class WorkQueue;
 struct Block_Buffer;
 struct Work_Buffer;
 
-struct SnippetData{
-        int work_id;
-        string sstfilename;
-        Value block_info_list;
-        vector<string> table_col;
-        Value table_filter;
-        vector<int> table_offset;
-        vector<int> table_offlen;
-        vector<int> table_datatype;
-        vector<string> sstfilelist;
-        string tablename;
-        vector<string> column_projection;
-        vector<string> column_filtering;
-        vector<string> Group_By;
-        vector<string> Order_By;
-        vector<string> Expr;
-};
-
-class Scheduler{
-
-    public:
-        Scheduler() {init_scheduler();}
-        vector<int> blockvec;
-        vector<tuple<string,string,string>> savedfilter;
-        vector<int> passindex;
-        SnippetData snippetdata;
-        vector<int> threadblocknum;
-    struct Snippet{
-        int work_id;
-        string sstfilename;
-        Value& block_info_list;
-        vector<string> table_col;
-        Value& table_filter;
-        vector<int> table_offset;
-        vector<int> table_offlen;
-        vector<int> table_datatype;
-        vector<string> sstfilelist;
-        vector<string> column_filtering;
-        vector<string> Group_By;
-        vector<string> Order_By;
-        vector<string> Expr;
-        vector<string> column_projection;
-
-        
-
-        Snippet(int work_id_, string sstfilename_,
-            Value& block_info_list_,
-            vector<string> table_col_, Value& table_filter_, 
-            vector<int> table_offset_, vector<int> table_offlen_,
-            vector<int> table_datatype_, vector<string> column_filtering_,
-            vector<string> Group_By_, vector<string> Order_By_, vector<string> Expr_,
-            vector<string> column_projection_)
-            : work_id(work_id_), sstfilename(sstfilename_),
-            block_info_list(block_info_list_),
-            table_col(table_col_),
-            table_filter(table_filter_),
-            table_offset(table_offset_),
-            table_offlen(table_offlen_),
-            table_datatype(table_datatype_),
-            column_filtering(column_filtering_),
-            Group_By(Group_By_), Order_By(Order_By_), Expr(Expr_),
-            column_projection(column_projection_){};
-        Snippet();
-    };
-
-        typedef enum work_type{
-            SCAN = 4,
-            SCAN_N_FILTER = 5,
-            REQ_SCANED_BLOCK = 6,
-            WORK_END = 9
-        }KETI_WORK_TYPE;
-
-        void init_scheduler();
-        void sched(int workid, Value& blockinfo,vector<int> offset, vector<int> offlen, vector<int> datatype, vector<string> tablecol, Value& filter,string sstfilename, string tablename, string res);
-        void sched(int indexdata);
-        void csdworkdec(string csdname, int num);
-        void Serialize(PrettyWriter<StringBuffer>& writer, Snippet& s, string csd_ip, string tablename, string CSDName);
-        void Serialize(Writer<StringBuffer>& writer, Snippet& s, string csd_ip, string tablename, string CSDName, int blockidnum);
-        string BestCSD(string sstname, int blockworkcount);
-        void sendsnippet(string snippet, string ipaddr);
-        // void addcsdip(Writer<StringBuffer>& writer, string s);
-        void printcsdblock(){
-          for(auto i = csdworkblock_.begin(); i != csdworkblock_.end(); i++){
-            pair<std::string, int> k = *i;
-            cout << k.first << " " << k.second << endl;
-          }
-        }
-    private:
-        unordered_map<string,string> csd_; //csd의 ip정보가 담긴 맵 <csdname, csdip>
-        unordered_map<string, int> csdworkblock_; //csd의 block work 수 가 담긴 맵 <csdname, csdworknum>
-        vector<string> csdname_;
-        unordered_map<string,string> sstcsd_; //csd의 sst파일 보유 내용 <sstname, csdlist>
-        vector<string> csdpair_;
-        unordered_map<string,string> csdreaplicamap_;
-        int blockcount_;
-};
 
 template <typename T>
 class WorkQueue{
@@ -189,22 +96,22 @@ public:
 
 struct BlockResult{
     int query_id;
-    int work_id;
+    int work_id;  
     char data[BUFF_SIZE];
     int length;
     vector<int> row_offset; 
-    int rows;
-    int result_block_count;
+    int row_count;
     string csd_name;
+    int result_block_count;
 
+    BlockResult(){}
     BlockResult(const char* json_, char* data_){
-
         Document document;
         document.Parse(json_); 
 
         query_id = document["queryID"].GetInt();
         work_id = document["workID"].GetInt();
-        rows = document["rowNum"].GetInt();
+        row_count = document["rowCount"].GetInt();
 
         Value &row_offset_ = document["rowOffset"];
         int row_offset_size = row_offset_.Size();
@@ -227,9 +134,9 @@ struct Work_Buffer {
     vector<int> return_datatype;//*결과의 컬럼 데이터 타입(돌아올때 확인)
     vector<int> table_datatype;//저장되는 결과의 컬럼 데이터 타입(위에서 확인)
     vector<int> table_offlen;//*결과의 컬럼 길이
-    unordered_map<string,vector<any>> table_data;//결과의 컬럼 별 데이터
+    unordered_map<string,vector<vectortype>> table_data;//결과의 컬럼 별 데이터
     int left_block_count;//*남은 블록 수
-    bool is_done;//워크 완료 여부
+    bool is_done;//작업 완료 여부
     condition_variable cond;
     mutex mu;
     // int table_type;//테이블 생성 타입?
@@ -253,7 +160,7 @@ struct Work_Buffer {
           if((*ptr2)==MySQL_BYTE){
             table_datatype.push_back(KETI_INT8);
           }else if((*ptr2)==MySQL_VARSTRING){
-            table_datatype.push_back(MySQL_STRING);
+            table_datatype.push_back(KETI_STRING);
           }else{
             table_datatype.push_back((*ptr2));
           }
@@ -262,10 +169,10 @@ struct Work_Buffer {
 };
 
 struct Query_Buffer{
-  int query_id;
+  int query_id;//쿼리ID
   int work_cnt;//저장된 워크 개수
   unordered_map<int,Work_Buffer*> work_buffer_list;//워크버퍼
-  unordered_map<string,pair<int,int>> table_status;//테이블별 상태<table_name/alias, <work_id,is_done> >
+  unordered_map<string,pair<int,int>> table_status;//테이블별 상태<key:table_name||alias, value:<work_id,is_done> >
 
   Query_Buffer(int qid)
   :query_id(qid){
@@ -277,7 +184,7 @@ struct Query_Buffer{
 
 struct TableData{
   bool valid;//결과의 유효성
-  unordered_map<string,vector<any>> table_data;//결과의 컬럼 별 데이터
+  unordered_map<string,vector<vectortype>> table_data;//결과의 컬럼 별 데이터
 
   TableData(){
     valid = true;
@@ -300,14 +207,14 @@ struct TableInfo{
 class BufferManager{	
 public:
     // BufferManager();
-    BufferManager(Scheduler &scheduler, TableManager &tblManager){
-      InitBufferManager(scheduler, tblManager);
+    BufferManager(Scheduler &scheduler){
+      InitBufferManager(scheduler);
     }
-    int InitBufferManager(Scheduler &scheduler, TableManager &tblManager);
+    int InitBufferManager(Scheduler &scheduler);
     int Join();
     void BlockBufferInput();
-    void BufferRunning(Scheduler &scheduler, TableManager &tblManager);
-    void MergeBlock(BlockResult result, Scheduler &scheduler, TableManager &tblManager);
+    void BufferRunning(Scheduler &scheduler);
+    void MergeBlock(BlockResult result, Scheduler &scheduler);
     // int GetData(Block_Buffer &dest);
     int InitWork(int qid, int wid, string table_alias,
                  vector<string> table_column_, vector<int> table_datatype,
@@ -316,8 +223,9 @@ public:
     int CheckTableStatus(int qid, string tname);
     TableInfo GetTableInfo(int qid, string tname);
     TableData GetTableData(int qid, string tname);
-    int SaveTableData(int qid, string tname, unordered_map<string,vector<any>> table_data_);
+    int SaveTableData(int qid, string tname, unordered_map<string,vector<vectortype>> table_data_);
     int DeleteTableData(int qid, string tname);
+    int EndQuery(int qid);
 
     unordered_map<int, struct Query_Buffer*> my_buffer_m(){
         return this->m_BufferManager;
@@ -329,3 +237,20 @@ private:
     thread BufferManager_Input_Thread;
     thread BufferManager_Thread;
 };
+
+/*
+// const std::string currentDateTime() {
+//     time_t     now = time(0);
+//     struct tm  tstruct;
+//     char       buf[80];
+//     tstruct = *localtime(&now);
+//     strftime(buf, sizeof(buf), "%Y-%m-%d %X", &tstruct);
+
+//     return buf;
+// }
+
+// #define log(fmt, ...) \
+//     printf("[%s: function:%s > line:%d] ", fmt ,"\t\t\t (%s)\n", \
+//     __FILE__, __LINE__, __func__, currentDateTime());
+*/
+

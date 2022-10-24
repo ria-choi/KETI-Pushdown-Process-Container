@@ -1,0 +1,44 @@
+{
+    "type" : 2,
+    "snippet":
+    {
+        "queryID " :4,
+        "workID":12,
+        "tableName": ["snippet4-11"],
+        "tableCol":[
+            "n_name",
+            "revenue"
+        ],
+        "tableFilter":[],
+        "tableOffset":[],
+        "tableOfflen":[],
+        "tableDatatype":[],
+        "blockList":[],
+        "tableAlias": "snippet4-12",
+        "columnAlias": [
+            "n_name",
+            "revenue"
+        ],
+        "columnProjection": [
+            {
+                "selectType": 0,
+                "value": ["n_name"],
+                "valueType": [10]
+            },
+            {
+                "selectType": 0,
+                "value": ["revenue"],
+                "valueType": [10]
+            }
+        ],
+        "columnFiltering": [],
+        "groupBy": [],
+        "orderBy": [
+            {
+                "ascending" : [1],
+                "columnName" : ["revenue"]
+            }
+        ]
+    }
+
+}

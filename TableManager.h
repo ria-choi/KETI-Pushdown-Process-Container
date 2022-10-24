@@ -1,8 +1,9 @@
 #ifndef _TABLE_MANAGER_H_
 #define _TABLE_MANAGER_H_
-
+#pragma once
 #include <vector>
 #include <unordered_map>
+// #include "testmodule.h"
 
 using namespace std;
 
@@ -42,6 +43,7 @@ public:
 	int get_table_schema(std::string tablename,vector<struct ColumnSchema> &dst);
 	vector<string> get_ordered_table_by_size(vector<string> tablenames);
 	int get_IndexList(string tablename, vector<vector<string>> &dst);
+	vector<string> get_sstlist(string tablename);
 	
 	
 private:
