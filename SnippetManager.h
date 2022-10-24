@@ -20,7 +20,7 @@
 
 #include "TableManager.h"
 // #include "buffer_manager.h"
-#include "mergequerykmc.h"
+#include "merge_query_manager.h"
 // #include "CSDScheduler.h"
 #include "CSDManager.h"
 #include "testmodule.h"

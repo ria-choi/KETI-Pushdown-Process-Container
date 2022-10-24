@@ -34,7 +34,7 @@
 #include "keti_type.h"
 #include "buffer_manager.h"
 #include "SnippetManager.h"
-#include "mergequerykmc.h"
+#include "merge_query_manager.h"
 // #include "SnippetManager.h"
 #include "CSDManager.h"
 // #include "snippet_sample.pb.h"

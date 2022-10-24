@@ -110,7 +110,7 @@ set(LINKING_LIBRARIES ${Casablanca_LIBRARIES})
 
 # # Storage_Engine_Instance
 add_executable(storage_engine_instance "StorageEngineInputInterface.cc" 
-"SnippetManager.cc" "TableManager.cc" "buffer_manager.cc" "CSDScheduler.cc" "CSDManager.cc" "mergequerykmc.cc" 
+"SnippetManager.cc" "TableManager.cc" "buffer_manager.cc" "CSDScheduler.cc" "CSDManager.cc" "merge_query_manager.cc" 
 "testmodule.cc" 
 "WalManager.cc" "keti_util.h" "log_msg.h")
 

@@ -1,4 +1,4 @@
-#include "mergequerykmc.h"
+#include "merge_query_manager.h"
 
 // using namespace std;
 
