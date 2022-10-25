@@ -1,6 +1,5 @@
 ## Introduction of KETI-OpenCSD Pushdown-Process-Container
 -------------
-![Alt text](/%EC%82%AC%EC%A7%84/pushdown.jpg)
 
 KEIT-Pushdown-Process-Container for KETI-OpenCSD Platform
 
