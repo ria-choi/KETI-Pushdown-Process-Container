@@ -37,7 +37,7 @@ void Scheduler::sched(int indexdata, CSDManager& csdmanager)
 
     int blockworkcount = snippetdata.block_info_list[indexdata][snippetdata.sstfilelist[indexdata].c_str()].Size();
 
-    string bestcsd = BestCSD(snippetdata.sstfilelist[indexdata], blockworkcount, csdmanager);
+    string bestcsd = DCS(snippetdata.sstfilelist[indexdata], blockworkcount, csdmanager);
 
     string s_sstfilelist = snippetdata.sstfilelist[indexdata];
     
@@ -364,7 +364,7 @@ void Scheduler::sendsnippet(string snippet, string ipaddr)
     // send(sock,(char*)csdip.c_str(),strlen(csdip.c_str()),0);
 }
 
-string Scheduler::BestCSD(string sstname, int blockworkcount, CSDManager& csdmanager)
+string Scheduler::DCS(string sstname, int blockworkcount, CSDManager& csdmanager)
 {
     string sstincsd = sstcsd_[sstname];
     string csdreplica = csdreaplicamap_[sstincsd];
@@ -386,20 +386,20 @@ string Scheduler::BestCSD(string sstname, int blockworkcount, CSDManager& csdman
 }
 
 
-// //CSD 병렬 처리 우선 알고리즘
-// string Scheduler::DPG(string sstname, int blockworkcount, CSDManager& csdmanager){
-//     string sstincsd = sstcsd_[sstname];
-//     string csdreplica = csdreaplicamap_[sstincsd];
+//CSD 병렬 처리 우선 알고리즘
+string Scheduler::DSI(string sstname, int blockworkcount, CSDManager& csdmanager){
+    string sstincsd = sstcsd_[sstname];
+    string csdreplica = csdreaplicamap_[sstincsd];
 
-//     return sstincsd;
+    return sstincsd;
 
-//     if (){
+    if (){
         
-//     }
-// }
+    }
+}
 
 //CSD 순서대로 Snippet 분배
-string Scheduler::RR(string sstname, int blockworkcount, CSDManager& csdmanager){
+string Scheduler::Random(string sstname, int blockworkcount, CSDManager& csdmanager){
     string sstincsd = sstcsd_[sstname];
 
     return sstincsd;

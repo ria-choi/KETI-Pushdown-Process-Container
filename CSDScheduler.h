@@ -144,9 +144,9 @@ class Scheduler{
         void csdworkdec(string csdname, int num);
         void Serialize(PrettyWriter<StringBuffer>& writer, Snippet& s, string csd_ip, string tablename, string CSDName);
         void Serialize(Writer<StringBuffer>& writer, Snippet& s, string csd_ip, string tablename, string CSDName, int blockidnum);
-        string BestCSD(string sstname, int blockworkcount, CSDManager& csdmanager);
-        string DPG(string sstname, int blockworkcount, CSDManager& csdmanager); //CSD 병렬 처리 우선
-        string RR(string sstname, int blockworkcount, CSDManager& csdmanager); //CSD 순서대로
+        string DCS(string sstname, int blockworkcount, CSDManager& csdmanager);
+        string DSI(string sstname, int blockworkcount, CSDManager& csdmanager); //CSD 병렬 처리 우선
+        string Random(string sstname, int blockworkcount, CSDManager& csdmanager); //CSD 순서대로
         void CSDManagerDec(string csdname, int num);
         void sendsnippet(string snippet, string ipaddr);
         // void addcsdip(Writer<StringBuffer>& writer, string s);
