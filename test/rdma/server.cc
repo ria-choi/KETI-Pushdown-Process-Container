@@ -228,8 +228,6 @@ int wait_recv_comp()
 
 void operation()
 {
-   // for (int i = 0; i < 10; i++)
-   //     buf[i] = htonl(ntohl(buf[i]) * 2);
    int len = strlen(buf);
    buf[len] = '!';
    printf("** Send Data : %s\n",buf);
