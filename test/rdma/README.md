@@ -1,4 +1,4 @@
-A simple RDMA server client example.
+A simple RDMA server-client example.
 
 ## How To Run
 -------------
