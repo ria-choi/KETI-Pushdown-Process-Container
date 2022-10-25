@@ -24,11 +24,16 @@ Developed by KETI
 
 >   RapidJSON
 
+>   Cmake >= 3.24
+
+>   libprotoc >= 3.19
+
 ## How To Install
 -------------
 ```bash
 git clone 
-cd Pushdown-Process-Container
+cd KETI-Pushdown-Process-Container/cmake/build
+cmake ../..
 make -j8
 ```
 
