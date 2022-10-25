@@ -203,7 +203,6 @@ int conn_send_data()
     if (ibv_post_recv(cm_id->qp, &recv_wr, &bad_recv_wr))
         return 1;
 
-   // for (int i = 0; i < 10; i++)
 
    // buf = htonl(buf);
     printf("** Send Data : %s\n",buf);
